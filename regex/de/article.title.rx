@@ -1,0 +1,1 @@
+(erzähl mir was ueber|erzähl uns von|was weiss wikipedia ueber|wiki|wikipedia) (?P<ArticleTitle>.*)
