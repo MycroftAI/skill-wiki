@@ -37,7 +37,13 @@ class WikipediaSkill(MycroftSkill):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
         self.max_results = self.config['max_results']
         self.max_phrases = self.config['max_phrases']
-        self.question = 'Would you like to know more about '  # TODO - i10n
+        self.language = self.config_core.get('lang')[0:2]
+        if self.language=="de":
+            wiki.set_lang("de")
+            self.question = 'Wuerdest du gerne mehr wissen ueber '  # TODO - i10n
+        else:
+            wiki.set_lang("en")
+            self.question = 'Would you like to know more about '
         self.feedback_prefix = read_stripped_lines(
             join(dirname(__file__), 'dialog', self.lang,
                  'FeedbackPrefix.dialog'))
@@ -85,7 +91,10 @@ class WikipediaSkill(MycroftSkill):
             if idx < size - 2:
                 sentence += ', '
             elif idx < size - 1:
-                sentence += ' or '  # TODO - i10n
+                if self.language=='de':
+                    sentence += ' oder '  # TODO - i10n
+                else:
+                    sentence += ' or '  # TODO - i10n
 
         self.speak(sentence)
 
