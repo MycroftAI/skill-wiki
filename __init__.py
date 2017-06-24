@@ -91,7 +91,10 @@ class WikipediaSkill(MycroftSkill):
             if idx < size - 2:
                 sentence += ', '
             elif idx < size - 1:
-                sentence += ' or '  # TODO - i10n
+                if self.language=='de':
+                    sentence += ' oder '  # TODO - i10n
+                else:
+                    sentence += ' or '  # TODO - i10n
 
         self.speak(sentence)
 
