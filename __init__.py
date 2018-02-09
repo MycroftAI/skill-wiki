@@ -55,6 +55,9 @@ class WikipediaSkill(MycroftSkill):
 
     def _lookup(self, search):
         try:
+            # Use the version of Wikipedia appropriate to the request language
+            dict = self.translate_namedvalues("wikipedia_lang")
+            wiki.set_lang(dict["code"])
 
             # Talk to the user, as this can take a little time...
             self.speak_dialog("searching", {"query": search})
