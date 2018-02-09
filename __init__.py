@@ -1,96 +1,111 @@
-# Copyright 2016 Mycroft AI, Inc.
+# Copyright 2017, Mycroft AI Inc.
 #
-# This file is part of Mycroft Core.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# Mycroft Core is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# Mycroft Core is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Mycroft Core.  If not, see <http://www.gnu.org/licenses/>.
-
-
-from random import randrange
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import re
 import wikipedia as wiki
 from adapt.intent import IntentBuilder
-from os.path import join, dirname
 
-from mycroft.skills.core import MycroftSkill
-from mycroft.util import read_stripped_lines
-from mycroft.util.log import getLogger
+from mycroft.skills.core import MycroftSkill, intent_handler
+from mycroft.util.log import LOG
 
-__author__ = 'jdorleans'
 
-LOGGER = getLogger(__name__)
-
+# Tests:  tell me about john
 
 class WikipediaSkill(MycroftSkill):
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
-        self.max_results = self.config['max_results']
-        self.max_phrases = self.config['max_phrases']
-        self.question = 'Would you like to know more about '  # TODO - i10n
-        self.feedback_prefix = read_stripped_lines(
-            join(dirname(__file__), 'dialog', self.lang,
-                 'FeedbackPrefix.dialog'))
-        self.feedback_search = read_stripped_lines(
-            join(dirname(__file__), 'dialog', self.lang,
-                 'FeedbackSearch.dialog'))
 
-    def initialize(self):
-        intent = IntentBuilder("WikipediaIntent").require(
-            "WikipediaKeyword").require("ArticleTitle").build()
-        self.register_intent(intent, self.handle_intent)
-
+    @intent_handler(IntentBuilder("").require("Wikipedia").
+                    require("ArticleTitle"))
     def handle_intent(self, message):
+        # Extract what the user asked about
+        self._lookup(message.data.get("ArticleTitle"))
+
+    @intent_handler(IntentBuilder("").require("More").
+                    require("wiki_article").require("spoken_lines"))
+    def handle_tell_more(self, message):
+        # Read more of the last article queried
+        article = message.data.get("wiki_article")
+        lines_spoken_already = int(message.data.get("spoken_lines"))
+
+        summary_read = wiki.summary(article, lines_spoken_already)
+        summary = wiki.summary(article, lines_spoken_already+5)
+
+        # Remove already-spoken parts and section titles
+        summary = summary[len(summary_read):]
+        summary = re.sub(r'\([^)]*\)|/[^/]*/|== [^=]+ ==', '', summary)
+
+        if not summary:
+            self.speak_dialog("thats all")
+        else:
+            self.speak(summary)
+            self.set_context("wiki_article", article)
+            self.set_context("spoken_lines", str(lines_spoken_already+5))
+
+    def _lookup(self, search):
         try:
-            title = message.data.get("ArticleTitle")
-            self.__feedback_search(title)
-            results = wiki.search(title, self.max_results)
-            summary = re.sub(
-                r'\([^)]*\)|/[^/]*/', '',
-                wiki.summary(results[0], self.max_phrases))
+            # Use the version of Wikipedia appropriate to the request language
+            dict = self.translate_namedvalues("wikipedia_lang")
+            wiki.set_lang(dict["code"])
+
+            # Talk to the user, as this can take a little time...
+            self.speak_dialog("searching", {"query": search})
+
+            # First step is to get wiki article titles.  This comes back
+            # as a list.  I.e. "beans" returns ['beans',
+            #     'Beans, Beans the Music Fruit', 'Phaseolus vulgaris',
+            #     'Baked beans', 'Navy beans']
+            results = wiki.search(search, 5)
+            if len(results) == 0:
+                self.speak_dialog("no entry found")
+                return
+
+            # Now request the summary for the first (best) match.  Wikipedia
+            # writes in inverted-pyramid style, so the first sentence is the
+            # most important, the second less important, etc.  Two sentences
+            # is all we ever need.
+            lines = 2
+            summary = wiki.summary(results[0], lines)
+            if "==" in summary or len(summary) > 250:
+                # We hit the end of the article summary or hit a really long
+                # one.  Reduce to first line.
+                lines = 1
+                summary = wiki.summary(results[0], lines)
+
+            # Now clean up the text and for speaking.  Remove words between
+            # parenthesis and brackets.  Wikipedia often includes birthdates
+            # in the article title, which breaks up the text badly.
+            summary = re.sub(r'\([^)]*\)|/[^/]*/', '', summary)
+
+            # Remember context and speak results
+            self.set_context("wiki_article", results[0])
+            self.set_context("spoken_lines", str(lines))
             self.speak(summary)
 
         except wiki.exceptions.DisambiguationError as e:
-            options = e.options[:self.max_results]
-            LOGGER.debug("Multiple options found: " + ', '.join(options))
-            self.__ask_more_about(options)
+            # Test:  "tell me about john"
+            options = e.options[:5]
+
+            option_list = (", ".join(options[:-1]) + " " +
+                           self.translate("or") + " " + options[-1])
+            choice = self.get_response('disambiguate',
+                                       data={"options": option_list})
+            if choice:
+                self._lookup(choice)
 
         except Exception as e:
-            LOGGER.error("Error: {0}".format(e))
-
-    def __feedback_search(self, title):
-        prefix = self.feedback_prefix[randrange(len(self.feedback_prefix))]
-        feedback = self.feedback_search[randrange(len(self.feedback_search))]
-        sentence = feedback.replace('<prefix>', prefix).replace(
-            '<title>', title)
-        self.speak(sentence)
-
-    def __ask_more_about(self, opts):
-        sentence = self.question
-        size = len(opts)
-
-        for idx, opt in enumerate(opts):
-            sentence += opt
-
-            if idx < size - 2:
-                sentence += ', '
-            elif idx < size - 1:
-                sentence += ' or '  # TODO - i10n
-
-        self.speak(sentence)
-
-    def stop(self):
-        pass
+            LOG.error("Error: {0}".format(e))
 
 
 def create_skill():
