@@ -44,7 +44,15 @@ class WikipediaSkill(MycroftSkill):
         self.feedback_search = read_stripped_lines(
             join(dirname(__file__), 'dialog', self.lang,
                  'FeedbackSearch.dialog'))
-
+    def _lookup(self, search):
+         try:
+             # Use the version of Wikipedia appropriate to the request language
+             dict = self.translate_namedvalues("wikipedia_lang")
+             wiki.set_lang(dict["code"])
+ 
+             # Talk to the user, as this can take a little time...
+             self.speak_dialog("searching", {"query": search})
+        
     def initialize(self):
         intent = IntentBuilder("WikipediaIntent").require(
             "WikipediaKeyword").require("ArticleTitle").build()
