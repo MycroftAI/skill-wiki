@@ -26,7 +26,7 @@ from os.path import join, dirname
 from mycroft.skills.core import MycroftSkill
 from mycroft.util import read_stripped_lines
 from mycroft.util.log import getLogger
-wiki.set_lang("it")
+
 __author__ = 'jdorleans'
 
 LOGGER = getLogger(__name__)
