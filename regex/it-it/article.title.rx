@@ -1,0 +1,1 @@
+(parlaci di|dimmi su|cosa dice wikipedia su|wiki|wikipedia) (?P<ArticleTitle>.*)
