@@ -1,1 +1,2 @@
+# Wikipedia language code used to service queries in the active language
 wiki.set_lang("it")
