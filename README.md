@@ -1,4 +1,4 @@
-## Wikipedia Skill
+## Wikipedia
 A fallback Skill which queries Wikipedia articles. 
 
 ## Description 
