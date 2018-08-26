@@ -13,7 +13,8 @@ Query [Wikipedia](https://www.wikipedia.org) for answers to all your questions. 
 * "Check Wikipedia for beans"
 * "Tell me about the Pembroke Welsh Corgi"
 * "Search for chocolate"
-* "More information"
+* "More information" (followup after an initial summary)
+* "Tell me More" (followup after an initial summary)
 
 ## Credits 
 Mycroft AI (@MycroftAI)
