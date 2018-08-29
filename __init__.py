@@ -16,7 +16,8 @@ import re
 import wikipedia as wiki
 from adapt.intent import IntentBuilder
 
-from mycroft.skills.core import MycroftSkill, intent_handler
+
+from mycroft.skills.core import MycroftSkill, intent_handler, intent_file_handler
 from mycroft.util.log import LOG
 
 
@@ -52,6 +53,12 @@ class WikipediaSkill(MycroftSkill):
             self.speak(summary)
             self.set_context("wiki_article", article)
             self.set_context("spoken_lines", str(lines_spoken_already+5))
+
+    @intent_file_handler("Random.intent")
+    def handle_random_intent(self, message):
+        #Get the Special:Random page of wikipedia
+        
+        self._lookup(wiki.random(pages=1))
 
     def _lookup(self, search):
         try:
