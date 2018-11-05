@@ -1,1 +1,1 @@
-.*(wiki|efter|om|wikipedia)(?! (efter|om)) (?P<ArticleTitle>.+)
+.*(wiki|om|wikipedia)(?! (om)) (?P<ArticleTitle>.+)
