@@ -10,6 +10,7 @@ Query [Wikipedia](https://www.wikipedia.org) for answers to all your questions. 
 ## Examples 
 * "Tell me about Elon Musk"
 * "Tell me about beans"
+* "Tell me something random"
 * "Check Wikipedia for beans"
 * "Tell me about the Pembroke Welsh Corgi"
 * "Search for chocolate"
