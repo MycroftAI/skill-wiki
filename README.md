@@ -1,4 +1,4 @@
-# <img src='https://rawgithub.com/FortAwesome/./Font-Awesome/master/advanced-options/raw-svg/brands/wikipedia-w.svg' card_color='#000000' width='50' height='50' style='vertical-align:bottom'/> Wikipedia
+# <img src='https://raw.githack.com/FortAwesome/Font-Awesome/master/svgs/brands/wikipedia-w.svg' card_color='#000000' width='50' height='50' style='vertical-align:bottom'/> Wikipedia
 Wikipedia
 
 ## About 
