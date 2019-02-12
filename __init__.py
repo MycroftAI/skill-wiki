@@ -46,10 +46,15 @@ class WikipediaSkill(MycroftSkill):
         # Remove already-spoken parts and section titles
         summary = summary[len(summary_read):]
         summary = re.sub(r'\([^)]*\)|/[^/]*/|== [^=]+ ==', '', summary)
-
+        
         if not summary:
             self.speak_dialog("thats all")
         else:
+            self.gui.clear()
+            pagetext = wiki.page(results[0]);
+            self.gui['summary'] = summary
+            self.gui['imgLink'] = pagetext.images[0]
+            self.gui.show_page("WikipediaDelegate.qml")
             self.speak(summary)
             self.set_context("wiki_article", article)
             self.set_context("spoken_lines", str(lines_spoken_already+5))
@@ -94,6 +99,13 @@ class WikipediaSkill(MycroftSkill):
             # parenthesis and brackets.  Wikipedia often includes birthdates
             # in the article title, which breaks up the text badly.
             summary = re.sub(r'\([^)]*\)|/[^/]*/', '', summary)
+
+            # Send to generate displays
+            self.gui.clear()
+            pagetext = wiki.page(results[0]);
+            self.gui['summary'] = summary
+            self.gui['imgLink'] = pagetext.images[0]
+            self.gui.show_page("WikipediaDelegate.qml")
 
             # Remember context and speak results
             self.set_context("wiki_article", results[0])
