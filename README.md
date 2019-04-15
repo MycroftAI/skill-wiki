@@ -29,4 +29,4 @@ Mycroft AI (@MycroftAI)
 #general-knowledge
 #wiki
 #question
-#query
+#query 
