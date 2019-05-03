@@ -21,7 +21,26 @@ from mycroft.skills.core import MycroftSkill, intent_handler, intent_file_handle
 from mycroft.util.log import LOG
 
 
-# Tests:  tell me about john
+EXCLUDED_IMAGES = [
+    'https://upload.wikimedia.org/wikipedia/commons/7/73/Blue_pencil.svg'
+]
+
+
+def wiki_image(pagetext):
+    """ Fetch first best image from results.
+
+        Arguments:
+            pagetext: wikipedia result page
+
+        Returns:
+            (str) image url or empty string if no image available
+    """
+    images = [i for i in pagetext.images if i not in EXCLUDED_IMAGES]
+    if len(images) > 0:
+        return images[0]
+    else:
+        return ''
+
 
 class WikipediaSkill(MycroftSkill):
     def __init__(self):
@@ -53,7 +72,7 @@ class WikipediaSkill(MycroftSkill):
             self.gui.clear()
             pagetext = wiki.page(results[0]);
             self.gui['summary'] = summary
-            self.gui['imgLink'] = pagetext.images[0]
+            self.gui['imgLink'] = wiki_image(pagetext)
             self.gui.show_page("WikipediaDelegate.qml")
             self.speak(summary)
             self.set_context("wiki_article", article)
@@ -104,7 +123,7 @@ class WikipediaSkill(MycroftSkill):
             self.gui.clear()
             pagetext = wiki.page(results[0]);
             self.gui['summary'] = summary
-            self.gui['imgLink'] = pagetext.images[0]
+            self.gui['imgLink'] = wiki_image(pagetext)
             self.gui.show_page("WikipediaDelegate.qml")
 
             # Remember context and speak results
