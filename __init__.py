@@ -81,7 +81,7 @@ class WikipediaSkill(MycroftSkill):
             pagetext = wiki.page(results[0]);
             self.gui['summary'] = summary
             self.gui['imgLink'] = wiki_image(pagetext)
-            self.gui.show_page("WikipediaDelegate.qml")
+            self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
             self.speak(summary)
             self.set_context("wiki_article", article)
             self.set_context("spoken_lines", str(lines_spoken_already+5))
@@ -140,7 +140,7 @@ class WikipediaSkill(MycroftSkill):
             pagetext = wiki.page(results[0]);
             self.gui['summary'] = summary
             self.gui['imgLink'] = wiki_image(pagetext)
-            self.gui.show_page("WikipediaDelegate.qml")
+            self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
 
             # Remember context and speak results
             self.set_context("wiki_article", results[0])
