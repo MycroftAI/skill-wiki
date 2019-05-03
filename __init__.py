@@ -17,8 +17,8 @@ import wikipedia as wiki
 from adapt.intent import IntentBuilder
 
 
-from mycroft.skills.core import MycroftSkill, intent_handler, intent_file_handler
-from mycroft.util.log import LOG
+from mycroft.skills.core import (MycroftSkill, intent_handler,
+                                 intent_file_handler)
 
 
 EXCLUDED_IMAGES = [
@@ -48,13 +48,20 @@ class WikipediaSkill(MycroftSkill):
 
     @intent_handler(IntentBuilder("").require("Wikipedia").
                     require("ArticleTitle"))
-    def handle_intent(self, message):
-        # Extract what the user asked about
+    def handle_wiki_query(self, message):
+        """ Extract what the user asked about and reply with info
+            from wikipedia.
+        """
         self._lookup(message.data.get("ArticleTitle"))
 
     @intent_handler(IntentBuilder("").require("More").
                     require("wiki_article").require("spoken_lines"))
     def handle_tell_more(self, message):
+        """ Follow up query handler, "tell me more".
+
+            If a "spoken_lines" entry exists in the active contexts
+            this can be triggered.
+        """
         # Read more of the last article queried
         results = self.results
         article = message.data.get("wiki_article")
@@ -81,11 +88,19 @@ class WikipediaSkill(MycroftSkill):
 
     @intent_file_handler("Random.intent")
     def handle_random_intent(self, message):
-        #Get the Special:Random page of wikipedia
+        """ Get a random wiki page.
+
+            Uses the Special:Random page of wikipedia
+        """
         
         self._lookup(wiki.random(pages=1))
 
     def _lookup(self, search):
+        """ Performs a wikipedia lookup and replies to the user.
+
+            Arguments:
+                search: phrase to search for
+        """
         try:
             # Use the version of Wikipedia appropriate to the request language
             dict = self.translate_namedvalues("wikipedia_lang")
@@ -145,7 +160,7 @@ class WikipediaSkill(MycroftSkill):
                 self._lookup(choice)
 
         except Exception as e:
-            LOG.error("Error: {0}".format(e))
+            self.log.error("Error: {0}".format(e))
 
 
 def create_skill():

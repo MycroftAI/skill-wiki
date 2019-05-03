@@ -1,8 +1,8 @@
 {
   "utterance": "tell me about the first world war",
-  "intent_type": "handle_intent",
+  "intent_type": "handle_wiki_query",
   "intent": {
     "Wikipedia": "tell me about",
-    "ArticleTitle": "first world war"
+    "ArticleTitle": "the first world war"
   }
 }
