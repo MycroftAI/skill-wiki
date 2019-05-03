@@ -56,6 +56,7 @@ class WikipediaSkill(MycroftSkill):
                     require("wiki_article").require("spoken_lines"))
     def handle_tell_more(self, message):
         # Read more of the last article queried
+        results = self.results
         article = message.data.get("wiki_article")
         lines_spoken_already = int(message.data.get("spoken_lines"))
 
@@ -130,6 +131,7 @@ class WikipediaSkill(MycroftSkill):
             self.set_context("wiki_article", results[0])
             self.set_context("spoken_lines", str(lines))
             self.speak(summary)
+            self.results = results
 
         except wiki.exceptions.DisambiguationError as e:
             # Test:  "tell me about john"
