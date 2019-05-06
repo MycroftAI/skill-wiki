@@ -13,33 +13,12 @@
 # limitations under the License.
 
 import re
-import wikipedia as wiki
+import mediawiki
 from adapt.intent import IntentBuilder
 
 
 from mycroft.skills.core import (MycroftSkill, intent_handler,
                                  intent_file_handler)
-
-
-EXCLUDED_IMAGES = [
-    'https://upload.wikimedia.org/wikipedia/commons/7/73/Blue_pencil.svg'
-]
-
-
-def wiki_image(pagetext):
-    """ Fetch first best image from results.
-
-        Arguments:
-            pagetext: wikipedia result page
-
-        Returns:
-            (str) image url or empty string if no image available
-    """
-    images = [i for i in pagetext.images if i not in EXCLUDED_IMAGES]
-    if len(images) > 0:
-        return images[0]
-    else:
-        return ''
 
 
 class WikipediaSkill(MycroftSkill):
@@ -52,7 +31,7 @@ class WikipediaSkill(MycroftSkill):
         """ Extract what the user asked about and reply with info
             from wikipedia.
         """
-        self._lookup(message.data.get("ArticleTitle"))
+        self._lookup(self.get_wiki(), message.data.get("ArticleTitle"))
 
     @intent_handler(IntentBuilder("").require("More").
                     require("wiki_article").require("spoken_lines"))
@@ -63,12 +42,12 @@ class WikipediaSkill(MycroftSkill):
             this can be triggered.
         """
         # Read more of the last article queried
-        results = self.results
+        page = self.results
         article = message.data.get("wiki_article")
         lines_spoken_already = int(message.data.get("spoken_lines"))
 
         summary_read = wiki.summary(article, lines_spoken_already)
-        summary = wiki.summary(article, lines_spoken_already+5)
+        summary = page.summarize(sentences=lines_spoken_already + 5)
 
         # Remove already-spoken parts and section titles
         summary = summary[len(summary_read):]
@@ -78,13 +57,16 @@ class WikipediaSkill(MycroftSkill):
             self.speak_dialog("thats all")
         else:
             self.gui.clear()
-            pagetext = wiki.page(results[0]);
             self.gui['summary'] = summary
-            self.gui['imgLink'] = wiki_image(pagetext)
+            self.gui['imgLink'] = page.logos[0]
             self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
             self.speak(summary)
             self.set_context("wiki_article", article)
             self.set_context("spoken_lines", str(lines_spoken_already+5))
+
+    def get_wiki(self):
+        langs = self.translate_namedvalues("wikipedia_lang")
+        return mediawiki.MediaWiki(lang=langs["code"])
 
     @intent_file_handler("Random.intent")
     def handle_random_intent(self, message):
@@ -92,28 +74,27 @@ class WikipediaSkill(MycroftSkill):
 
             Uses the Special:Random page of wikipedia
         """
-        
-        self._lookup(wiki.random(pages=1))
+        wiki = self.get_wiki()
+        self._lookup(wiki, wiki.random(pages=1))
 
-    def _lookup(self, search):
+    def _lookup(self, wiki, search):
         """ Performs a wikipedia lookup and replies to the user.
 
             Arguments:
+                wiki: wikipedia object
                 search: phrase to search for
         """
         try:
             # Use the version of Wikipedia appropriate to the request language
-            dict = self.translate_namedvalues("wikipedia_lang")
-            wiki.set_lang(dict["code"])
 
             # Talk to the user, as this can take a little time...
-            self.speak_dialog("searching", {"query": search})
+            self.speak_dialog("searching", {"query": search or page})
 
             # First step is to get wiki article titles.  This comes back
             # as a list.  I.e. "beans" returns ['beans',
             #     'Beans, Beans the Music Fruit', 'Phaseolus vulgaris',
             #     'Baked beans', 'Navy beans']
-            results = wiki.search(search, 5)
+            results = wiki.search(search, results=5)
             if len(results) == 0:
                 self.speak_dialog("no entry found")
                 return
@@ -122,13 +103,10 @@ class WikipediaSkill(MycroftSkill):
             # writes in inverted-pyramid style, so the first sentence is the
             # most important, the second less important, etc.  Two sentences
             # is all we ever need.
+            page = wiki.page(results[0])
+
             lines = 2
-            summary = wiki.summary(results[0], lines)
-            if "==" in summary or len(summary) > 250:
-                # We hit the end of the article summary or hit a really long
-                # one.  Reduce to first line.
-                lines = 1
-                summary = wiki.summary(results[0], lines)
+            summary = page.summarize(sentences=lines)
 
             # Now clean up the text and for speaking.  Remove words between
             # parenthesis and brackets.  Wikipedia often includes birthdates
@@ -137,18 +115,17 @@ class WikipediaSkill(MycroftSkill):
 
             # Send to generate displays
             self.gui.clear()
-            pagetext = wiki.page(results[0]);
             self.gui['summary'] = summary
-            self.gui['imgLink'] = wiki_image(pagetext)
+            self.gui['imgLink'] = page.logos[0]
             self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
 
             # Remember context and speak results
-            self.set_context("wiki_article", results[0])
+            self.set_context("wiki_article", page.title)
             self.set_context("spoken_lines", str(lines))
             self.speak(summary)
             self.results = results
 
-        except wiki.exceptions.DisambiguationError as e:
+        except mediawiki.exceptions.DisambiguationError as e:
             # Test:  "tell me about john"
             options = e.options[:5]
 
@@ -157,10 +134,11 @@ class WikipediaSkill(MycroftSkill):
             choice = self.get_response('disambiguate',
                                        data={"options": option_list})
             if choice:
-                self._lookup(choice)
+                wiki = self.get_wiki()
+                self._lookup(wiki, choice)
 
         except Exception as e:
-            self.log.error("Error: {0}".format(e))
+            self.log.exception("Error: {0}".format(e))
 
 
 def create_skill():
