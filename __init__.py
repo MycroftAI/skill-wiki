@@ -13,33 +13,12 @@
 # limitations under the License.
 
 import re
-import wikipedia as wiki
+import mediawiki
 from adapt.intent import IntentBuilder
 
 
 from mycroft.skills.core import (MycroftSkill, intent_handler,
                                  intent_file_handler)
-
-
-EXCLUDED_IMAGES = [
-    'https://upload.wikimedia.org/wikipedia/commons/7/73/Blue_pencil.svg'
-]
-
-
-def wiki_image(pagetext):
-    """ Fetch first best image from results.
-
-        Arguments:
-            pagetext: wikipedia result page
-
-        Returns:
-            (str) image url or empty string if no image available
-    """
-    images = [i for i in pagetext.images if i not in EXCLUDED_IMAGES]
-    if len(images) > 0:
-        return images[0]
-    else:
-        return ''
 
 
 class WikipediaSkill(MycroftSkill):
@@ -63,12 +42,12 @@ class WikipediaSkill(MycroftSkill):
             this can be triggered.
         """
         # Read more of the last article queried
-        results = self.results
+        page = self.results
         article = message.data.get("wiki_article")
         lines_spoken_already = int(message.data.get("spoken_lines"))
 
         summary_read = wiki.summary(article, lines_spoken_already)
-        summary = wiki.summary(article, lines_spoken_already+5)
+        summary = page.summarize(sentences=lines_spoken_already + 5)
 
         # Remove already-spoken parts and section titles
         summary = summary[len(summary_read):]
@@ -78,9 +57,8 @@ class WikipediaSkill(MycroftSkill):
             self.speak_dialog("thats all")
         else:
             self.gui.clear()
-            pagetext = wiki.page(results[0]);
             self.gui['summary'] = summary
-            self.gui['imgLink'] = wiki_image(pagetext)
+            self.gui['imgLink'] = page.logos[0]
             self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
             self.speak(summary)
             self.set_context("wiki_article", article)
@@ -104,7 +82,7 @@ class WikipediaSkill(MycroftSkill):
         try:
             # Use the version of Wikipedia appropriate to the request language
             dict = self.translate_namedvalues("wikipedia_lang")
-            wiki.set_lang(dict["code"])
+            wiki = mediawiki.MediaWiki(lang=dict["code"])
 
             # Talk to the user, as this can take a little time...
             self.speak_dialog("searching", {"query": search})
@@ -113,7 +91,7 @@ class WikipediaSkill(MycroftSkill):
             # as a list.  I.e. "beans" returns ['beans',
             #     'Beans, Beans the Music Fruit', 'Phaseolus vulgaris',
             #     'Baked beans', 'Navy beans']
-            results = wiki.search(search, 5)
+            results = wiki.search(search, results=5)
             if len(results) == 0:
                 self.speak_dialog("no entry found")
                 return
@@ -123,12 +101,8 @@ class WikipediaSkill(MycroftSkill):
             # most important, the second less important, etc.  Two sentences
             # is all we ever need.
             lines = 2
-            summary = wiki.summary(results[0], lines)
-            if "==" in summary or len(summary) > 250:
-                # We hit the end of the article summary or hit a really long
-                # one.  Reduce to first line.
-                lines = 1
-                summary = wiki.summary(results[0], lines)
+            page = wiki.page(results[0])
+            summary = page.summarize(sentences=2)
 
             # Now clean up the text and for speaking.  Remove words between
             # parenthesis and brackets.  Wikipedia often includes birthdates
@@ -137,9 +111,8 @@ class WikipediaSkill(MycroftSkill):
 
             # Send to generate displays
             self.gui.clear()
-            pagetext = wiki.page(results[0]);
             self.gui['summary'] = summary
-            self.gui['imgLink'] = wiki_image(pagetext)
+            self.gui['imgLink'] = page.logos[0]
             self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
 
             # Remember context and speak results
@@ -148,7 +121,7 @@ class WikipediaSkill(MycroftSkill):
             self.speak(summary)
             self.results = results
 
-        except wiki.exceptions.DisambiguationError as e:
+        except mediawiki.exceptions.DisambiguationError as e:
             # Test:  "tell me about john"
             options = e.options[:5]
 
@@ -160,7 +133,7 @@ class WikipediaSkill(MycroftSkill):
                 self._lookup(choice)
 
         except Exception as e:
-            self.log.error("Error: {0}".format(e))
+            self.log.exception("Error: {0}".format(e))
 
 
 def create_skill():
