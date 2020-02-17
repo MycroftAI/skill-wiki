@@ -52,7 +52,16 @@ class WikipediaSkill(MycroftSkill):
         """ Extract what the user asked about and reply with info
             from wikipedia.
         """
-        self._lookup(message.data.get("ArticleTitle"))
+        # Talk to the user, as this can take a little time...
+        search = message.data.get("ArticleTitle")
+        self.speak_dialog("searching", {"query": search})
+
+        try:
+            self._lookup(search)
+        except wiki.PageError:
+            self._lookup(search, auto_suggest=False)
+        except Exception as e:
+            self.log.error("Error: {0}".format(e))
 
     @intent_handler(IntentBuilder("").require("More").
                     require("wiki_article").require("spoken_lines"))
@@ -68,17 +77,26 @@ class WikipediaSkill(MycroftSkill):
         lines_spoken_already = int(message.data.get("spoken_lines"))
 
         summary_read = wiki.summary(article, lines_spoken_already)
-        summary = wiki.summary(article, lines_spoken_already+5)
+        try:
+            summary = wiki.summary(article, lines_spoken_already + 5)
+        except wiki.PageError:
+            summary = wiki.summary(article, lines_spoken_already + 5,
+                                   auto_suggest=False)
 
         # Remove already-spoken parts and section titles
         summary = summary[len(summary_read):]
         summary = re.sub(r'\([^)]*\)|/[^/]*/|== [^=]+ ==', '', summary)
-        
+
         if not summary:
             self.speak_dialog("thats all")
         else:
             self.gui.clear()
-            pagetext = wiki.page(results[0]);
+
+            try:
+                pagetext = wiki.page(results[0])
+            except wiki.PageError:
+                pagetext = wiki.page(results[0], auto_suggest=False)
+
             self.gui['summary'] = summary
             self.gui['imgLink'] = wiki_image(pagetext)
             self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
@@ -92,10 +110,12 @@ class WikipediaSkill(MycroftSkill):
 
             Uses the Special:Random page of wikipedia
         """
-        
-        self._lookup(wiki.random(pages=1))
+        # Talk to the user, as this can take a little time...
+        search = wiki.random(pages=1)
+        self.speak_dialog("searching", {"query": search})
+        self._lookup(search)
 
-    def _lookup(self, search):
+    def _lookup(self, search, auto_suggest=True):
         """ Performs a wikipedia lookup and replies to the user.
 
             Arguments:
@@ -105,9 +125,6 @@ class WikipediaSkill(MycroftSkill):
             # Use the version of Wikipedia appropriate to the request language
             dict = self.translate_namedvalues("wikipedia_lang")
             wiki.set_lang(dict["code"])
-
-            # Talk to the user, as this can take a little time...
-            self.speak_dialog("searching", {"query": search})
 
             # First step is to get wiki article titles.  This comes back
             # as a list.  I.e. "beans" returns ['beans',
@@ -123,12 +140,15 @@ class WikipediaSkill(MycroftSkill):
             # most important, the second less important, etc.  Two sentences
             # is all we ever need.
             lines = 2
-            summary = wiki.summary(results[0], lines)
+            summary = wiki.summary(results[0], lines,
+                                   auto_suggest=auto_suggest)
+
             if "==" in summary or len(summary) > 250:
                 # We hit the end of the article summary or hit a really long
                 # one.  Reduce to first line.
                 lines = 1
-                summary = wiki.summary(results[0], lines)
+                summary = wiki.summary(results[0], lines,
+                                       auto_suggest=auto_suggest)
 
             # Now clean up the text and for speaking.  Remove words between
             # parenthesis and brackets.  Wikipedia often includes birthdates
@@ -137,7 +157,7 @@ class WikipediaSkill(MycroftSkill):
 
             # Send to generate displays
             self.gui.clear()
-            pagetext = wiki.page(results[0]);
+            pagetext = wiki.page(results[0], auto_suggest=auto_suggest)
             self.gui['summary'] = summary
             self.gui['imgLink'] = wiki_image(pagetext)
             self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
@@ -157,10 +177,7 @@ class WikipediaSkill(MycroftSkill):
             choice = self.get_response('disambiguate',
                                        data={"options": option_list})
             if choice:
-                self._lookup(choice)
-
-        except Exception as e:
-            self.log.error("Error: {0}".format(e))
+                self._lookup(choice, auto_suggest=auto_suggest)
 
 
 def create_skill():
