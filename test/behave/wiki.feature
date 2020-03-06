@@ -2,11 +2,12 @@ Feature: Wikipedia Skill
 
   Scenario Outline: user asks a question about a person
     Given an english speaking user
-     When the user says "<tell me about abraham lincoln>"
+     When the user says "<tell me about a person>"
      Then "skill-wiki" should reply with dialog from "searching.dialog"
-     And mycroft reply should contain "<lincoln>"
+     And mycroft reply should contain "<person>"
 
   Examples: user asks a question about a person
+    | tell me about a person | person |
     | tell me about abraham lincoln | lincoln |
     | tell me about nelson mandela | mandela |
     | tell me about queen elizabeth | elizabeth |
@@ -17,11 +18,12 @@ Feature: Wikipedia Skill
 
   Scenario Outline: user asks a question about a place
     Given an english speaking user
-     When the user says "<tell me about amsterdam>"
+     When the user says "<tell me about a place>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
-     And mycroft reply should contain "<netherlands>"
+     And mycroft reply should contain "<place>"
 
   Examples: user asks a question about a place
+    | tell me about a place | place |
     | tell me about amsterdam | netherlands |
     | tell me about tokyo | japan |
     | tell me about antarctica | pole |
@@ -29,32 +31,34 @@ Feature: Wikipedia Skill
 
   Scenario Outline: user asks a question about something
     Given an english speaking user
-     When the user says "<tell me about sandwiches>"
+     When the user says "<tell me about a thing>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
-     And mycroft reply should contain "<sandwich>"
+     And mycroft reply should contain "<thing>"
 
   Examples: user asks a question about a place
+    | tell me about a thing | thing |
     | tell me about sandwiches | sandwich |
     | tell me about hammers | hammer |
 
   @xfail
   Scenario Outline: failing queries
     Given an english speaking user
-     When the user says "<tell me about failure>"
+     When the user says "<tell me about failures>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
      And mycroft reply should contain "<failure>"
 
   Examples: failing things
-    | tell me about failures | failures |
+    | tell me about failures | failure |
     | tell me about automobiles | automobile |
 
   Scenario Outline: user asks a question about an idea
     Given an english speaking user
-     When the user says "<tell me about philosophy>"
+     When the user says "<tell me about an idea>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
-     And mycroft reply should contain "<philosophy>"
+     And mycroft reply should contain "<idea>"
 
   Examples: user asks a question about a place
+    | tell me about an idea | idea |
     | tell me about philosophy | philosophy |
     | tell me about politics | politics |
     | tell me about science | knowledge |
