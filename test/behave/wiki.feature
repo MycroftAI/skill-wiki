@@ -41,6 +41,7 @@ Feature: Wikipedia Skill
     | tell me about hammers | hammer |
 
   @xfail
+  # Jira MS-79 https://mycroft.atlassian.net/browse/MS-79
   Scenario Outline: failing queries
     Given an english speaking user
      When the user says "<tell me about failures>"
