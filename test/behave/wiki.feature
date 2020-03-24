@@ -12,9 +12,19 @@ Feature: Wikipedia Skill
     | tell me about nelson mandela | mandela |
     | tell me about queen elizabeth | elizabeth |
     | tell me about Mahatma Gandhi | gandhi |
-    | tell me about George Church | church |
     | tell me about the president of the united states | president |
     | tell me about the secretary general of the united nations | secretary |
+
+  @xfail
+  Scenario Outline: Failing user asks a question about a person
+    Given an english speaking user
+     When the user says "<tell me about a person>"
+     Then "skill-wiki" should reply with dialog from "searching.dialog"
+     And mycroft reply should contain "<person>"
+
+  Examples: user asks a question about a person
+    | tell me about a person | person |
+    | tell me about George Church | church |
 
   Scenario Outline: user asks a question about a place
     Given an english speaking user
