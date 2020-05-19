@@ -2,7 +2,7 @@
 Wikipedia
 
 ## About 
-Query [Wikipedia](https://www.wikipedia.org) for answers to all your questions.  Get just a summary, or ask for more to get in-depth information.
+Query [Wikipedia](https://www.wikipedia.org) for answers to all your questions.  Get just a summary, a summary from the categories of the search, referneces, sources, and images.
  
  This Skill uses the [Wikimedia API](https://en.wikipedia.org/w/api.php). 
 
@@ -16,7 +16,8 @@ Query [Wikipedia](https://www.wikipedia.org) for answers to all your questions. 
 * "Search for chocolate"
 * "More information" (followup after an initial summary)
 * "Tell me More" (followup after an initial summary)
-
+* "Tell me More" (followup after an initial summary)
+* "Tell me everything" (to get the entire summary)
 ## Credits 
 Mycroft AI (@MycroftAI)
 
