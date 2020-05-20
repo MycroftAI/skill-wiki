@@ -115,11 +115,11 @@ class WikipediaSkill(MycroftSkill):
     def handle_section_query(self, message):
       """reads requested section
       """
-        article = wiki.page("ArticleTitle")
-        section = article.section("Section")
-        if section is not None:
+      article = wiki.page("ArticleTitle")
+      section = article.section("Section")
+      if section is not None:
           self.speak_dialog(section)
-        else: 
+      else: 
           self.speak_dialog("Sorry, that section does not exist")
       
 
