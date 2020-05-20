@@ -101,7 +101,7 @@ class WikipediaSkill(MycroftSkill):
       """tells about sections 
       """
       article = message.data.get("ArticleTitle")
-      if "ArticleTitle" is not None:
+      if article is not None:
           r = wiki.search(article)
           a = wiki.page(r)
       else: 
