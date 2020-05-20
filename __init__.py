@@ -104,10 +104,10 @@ class WikipediaSkill(MycroftSkill):
           article = message.data.get("ArticleTitle")
       else: 
           article = message.data.get("wiki_article")
-        article = wiki.page(article)
-        sections = article.sections
-        self.speak_dialog("The sections on this article are", sections)
-        self.sections = sections
+      article = wiki.page(article)
+      sections = article.sections
+      self.speak_dialog("The sections on this article are", sections)
+      self.sections = sections
     
     @intent_handler(IntentBuilder("").require("WhatSection").
                     one_of("ArticleTitle", "wiki_article").
