@@ -44,6 +44,22 @@ class WikipediaSkill(MycroftSkill):
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
 
+    @intent_handler(IntentBuilder("").require("FullSummary").
+                    require("ArticleTitle"))
+    def handle_fullwiki_query(self, message):
+        """ Same as above, but says the entire summary outright
+        """
+        # Talk to the user, as this can take a little time...
+        search = message.data.get("ArticleTitle")
+        self.speak_dialog("searching", {"query": search})
+
+        try:
+            self._lookupfull(search)
+        except wiki.PageError:
+            self._lookupfull(search, auto_suggest=False)
+        except Exception as e:
+            self.log.error("Error: {0}".format(e))
+
     @intent_handler(IntentBuilder("").require("Wikipedia").
                     require("ArticleTitle"))
     def handle_wiki_query(self, message):
@@ -61,22 +77,6 @@ class WikipediaSkill(MycroftSkill):
         except Exception as e:
             self.log.error("Error: {0}".format(e))
     
-    @intent_handler(IntentBuilder("").require("FullSummary").
-                    require("ArticleTitle"))
-    def handle_fullwiki_query(self, message):
-        """ Same as above, but says the entire summary outright
-        """
-        # Talk to the user, as this can take a little time...
-        search = message.data.get("ArticleTitle")
-        self.speak_dialog("searching", {"query": search})
-
-        try:
-            self._lookupfull(search)
-        except wiki.PageError:
-            self._lookupfull(search, auto_suggest=False)
-        except Exception as e:
-            self.log.error("Error: {0}".format(e))
-
     @intent_handler(IntentBuilder("").require("More").
                     require("wiki_article").require("spoken_lines"))
     def handle_tell_more(self, message):
