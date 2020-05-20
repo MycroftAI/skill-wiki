@@ -106,7 +106,8 @@ class WikipediaSkill(MycroftSkill):
           r = wiki.search(article)
           a = wiki.page(r)
       else: 
-          a = message.data.get("wiki_article")
+          r = message.data.get("wiki_article")
+          a = wiki.page(r)
       sections = a.sections
       self.speak_dialog("sections_search", {"query": search})
       self.sections = sections
