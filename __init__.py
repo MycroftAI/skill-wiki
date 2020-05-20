@@ -62,6 +62,22 @@ class WikipediaSkill(MycroftSkill):
             self._lookup(search, auto_suggest=False)
         except Exception as e:
             self.log.error("Error: {0}".format(e))
+    
+    @intent_handler(IntentBuilder("").require("FullSummary").
+                    require("ArticleTitle"))
+    def handle_fullwiki_query(self, message):
+        """ Same as above, but says the entire summary outright
+        """
+        # Talk to the user, as this can take a little time...
+        search = message.data.get("ArticleTitle")
+        self.speak_dialog("searching", {"query": search})
+
+        try:
+            self._lookupfull(search)
+        except wiki.PageError:
+            self._lookupfull(search, auto_suggest=False)
+        except Exception as e:
+            self.log.error("Error: {0}".format(e))
 
     @intent_handler(IntentBuilder("").require("More").
                     require("wiki_article").require("spoken_lines"))
@@ -82,27 +98,33 @@ class WikipediaSkill(MycroftSkill):
         except wiki.PageError:
             summary = wiki.summary(article, lines_spoken_already + 5,
                                    auto_suggest=False)
-
-        # Remove already-spoken parts and section titles
-        summary = summary[len(summary_read):]
-        summary = re.sub(r'\([^)]*\)|/[^/]*/|== [^=]+ ==', '', summary)
-
-        if not summary:
-            self.speak_dialog("thats all")
-        else:
-            self.gui.clear()
-
-            try:
-                pagetext = wiki.page(results[0])
-            except wiki.PageError:
-                pagetext = wiki.page(results[0], auto_suggest=False)
-
-            self.gui['summary'] = summary
-            self.gui['imgLink'] = wiki_image(pagetext)
-            self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
-            self.speak(summary)
-            self.set_context("wiki_article", article)
-            self.set_context("spoken_lines", str(lines_spoken_already+5))
+    @intent_handler(IntentBuilder("").require("WhatSection").
+                    one_of("ArticleTitle", "wiki_article"))
+    def handle_whatsection_query(self, message):
+      """tells about sections 
+      """
+        if "ArticleTitle" is not None:
+          article = message.data.get("ArticleTitle")
+        else 
+          article = message.data.get("wiki_article")
+        article = wiki.page(article)
+        sections = article.sections
+        self.speak_dialog("The sections on this article are", sections)
+        self.sections = sections
+    
+    @intent_handler(IntentBuilder("").require("WhatSection").
+                    one_of("ArticleTitle", "wiki_article").
+                    require("Section"))
+    def handle_section_query(self, message):
+      """reads requested section
+      """
+        article = wiki.page("ArticleTitle")
+        section = article.section("Section")
+        if section is not None:
+          self.speak_dialog(section)
+        else: 
+          self.speak_dialog("Sorry, that section does not exist")
+      
 
     @intent_file_handler("Random.intent")
     def handle_random_intent(self, message):
@@ -149,6 +171,54 @@ class WikipediaSkill(MycroftSkill):
                 lines = 1
                 summary = wiki.summary(results[0], lines,
                                        auto_suggest=auto_suggest)
+
+            # Now clean up the text and for speaking.  Remove words between
+            # parenthesis and brackets.  Wikipedia often includes birthdates
+            # in the article title, which breaks up the text badly.
+            summary = re.sub(r'\([^)]*\)|/[^/]*/', '', summary)
+
+            # Send to generate displays
+            self.gui.clear()
+            pagetext = wiki.page(results[0], auto_suggest=auto_suggest)
+            self.gui['summary'] = summary
+            self.gui['imgLink'] = wiki_image(pagetext)
+            self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
+
+            # Remember context and speak results
+            self.set_context("wiki_article", results[0])
+            self.set_context("spoken_lines", str(lines))
+            self.speak(summary)
+            self.results = results
+
+        except wiki.exceptions.DisambiguationError as e:
+            # Test:  "tell me about john"
+            options = e.options[:5]
+
+            option_list = (", ".join(options[:-1]) + " " +
+                           self.translate("or") + " " + options[-1])
+            choice = self.get_response('disambiguate',
+                                       data={"options": option_list})
+            if choice:
+                self._lookup(choice, auto_suggest=auto_suggest)
+    def _lookupfull(self, search, auto_suggest=True):
+        """ 
+        """
+        try:
+            # Use the version of Wikipedia appropriate to the request language
+            dict = self.translate_namedvalues("wikipedia_lang")
+            wiki.set_lang(dict["code"])
+
+            # First step is to get wiki article titles.  This comes back
+            # as a list.  I.e. "beans" returns ['beans',
+            #     'Beans, Beans the Music Fruit', 'Phaseolus vulgaris',
+            #     'Baked beans', 'Navy beans']
+            results = wiki.search(search, 5)
+            if len(results) == 0:
+                self.speak_dialog("no entry found")
+                return
+            #Tells full summary
+            summary = wiki.summary(results[0],
+                                   auto_suggest=auto_suggest)
 
             # Now clean up the text and for speaking.  Remove words between
             # parenthesis and brackets.  Wikipedia often includes birthdates
