@@ -133,8 +133,8 @@ class WikipediaSkill(MycroftSkill):
           self.speak_dialog("Sorry, that section does not exist")
         return
       article = message.data.get("ArticleTitle")
-      self.speak(sInput)
-      a = wiki.page(article)
+      r = wiki.search(article, 1)
+      a = wiki.page(r)
       section = a.section(sInput.capitalize())
       if section is not None:
           self.speak_dialog(section)
