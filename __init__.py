@@ -118,7 +118,7 @@ class WikipediaSkill(MycroftSkill):
     
     @intent_handler(IntentBuilder("").require("ReadSection").
                     one_of("ArticleTitle", "wiki_article").
-                    require("section"))
+                    require("Section"))
     def handle_section_query(self, message):
       """reads requested section
       """
