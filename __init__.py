@@ -102,10 +102,9 @@ class WikipediaSkill(MycroftSkill):
       """
       if "ArticleTitle" is not None:
           r=wiki.search("ArticleTitle")
-          article = r[0]
       else: 
           article = message.data.get("wiki_article")
-      article = wiki.page(article)
+      article = wiki.page(r[0])
       sections = article.sections
       self.speak_dialog("The sections on this article are", sections)
       self.sections = sections
