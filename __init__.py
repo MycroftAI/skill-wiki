@@ -106,7 +106,7 @@ class WikipediaSkill(MycroftSkill):
           article = message.data.get("wiki_article")
       article = wiki.page(r[0])
       sections = article.sections
-      self.speak_dialog("The sections on this article are", sections)
+      self.speak_dialog("sections_search", sections)
       self.sections = sections
     
     @intent_handler(IntentBuilder("").require("ReadSection").
