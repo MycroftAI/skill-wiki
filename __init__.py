@@ -102,11 +102,11 @@ class WikipediaSkill(MycroftSkill):
       """
       if "ArticleTitle" is not None:
           r=wiki.search("ArticleTitle")
-          article = wiki.page(r[0])
+          a = wiki.page(r[0])
       else: 
-          article = message.data.get("wiki_article")
-      sections = article.sections
-      self.speak_dialog("sections_search", sections)
+          a = message.data.get("wiki_article")
+      sections = a.sections
+      self.speak_dialog("sections_search", {"query": search})
       self.sections = sections
     
     @intent_handler(IntentBuilder("").require("ReadSection").
