@@ -127,12 +127,14 @@ class WikipediaSkill(MycroftSkill):
       if article is not None:
         a = wiki.page(article)
         section = a.section(sInput)
+        self.speak(sInput)
         if section is not None:
           self.speak_dialog(section)
         else: 
           self.speak_dialog("Sorry, that section does not exist")
         return
       article = message.data.get("ArticleTitle")
+      self.speak(sInput)
       a = wiki.page(article)
       section = a.section(sInput)
       if section is not None:
