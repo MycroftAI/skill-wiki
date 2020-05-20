@@ -111,6 +111,8 @@ class WikipediaSkill(MycroftSkill):
       sections = a.sections
       self.speak_dialog("sections_search", {"query": r})
       self.sections = sections
+      self.speak("The sections I found for this are")
+      self.speak(sections)
     
     @intent_handler(IntentBuilder("").require("ReadSection").
                     one_of("ArticleTitle", "wiki_article").
