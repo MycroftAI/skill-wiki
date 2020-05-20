@@ -229,7 +229,6 @@ class WikipediaSkill(MycroftSkill):
 
             # Remember context and speak results
             self.set_context("wiki_article", results[0])
-            self.set_context("spoken_lines", str(lines))
             self.speak(summary)
             self.results = results
 
