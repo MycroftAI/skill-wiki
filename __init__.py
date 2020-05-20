@@ -112,7 +112,7 @@ class WikipediaSkill(MycroftSkill):
       sections = a.sections
       self.speak("The sections I found for this are")
       print(sections)
-      self.speak(sections)
+      self.speak(sections[0])
       self.sections = sections
     
     @intent_handler(IntentBuilder("").require("ReadSection").
