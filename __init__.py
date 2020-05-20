@@ -100,8 +100,9 @@ class WikipediaSkill(MycroftSkill):
     def handle_whatsection_query(self, message):
       """tells about sections 
       """
+      article = message.data.get("ArticleTitle")
       if "ArticleTitle" is not None:
-          r=wiki.search("ArticleTitle")
+          r=wiki.search()
           print(r)
           a = wiki.page(r[0])
       else: 
