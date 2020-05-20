@@ -102,8 +102,7 @@ class WikipediaSkill(MycroftSkill):
       """
       article = message.data.get("ArticleTitle")
       if "ArticleTitle" is not None:
-          r=wiki.search()
-          print(r)
+          r=wiki.search(article)
           a = wiki.page(r[0])
       else: 
           a = message.data.get("wiki_article")
