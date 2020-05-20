@@ -109,7 +109,7 @@ class WikipediaSkill(MycroftSkill):
       self.speak_dialog("The sections on this article are", sections)
       self.sections = sections
     
-    @intent_handler(IntentBuilder("").require("WhatSection").
+    @intent_handler(IntentBuilder("").require("ReadSection").
                     one_of("ArticleTitle", "wiki_article").
                     require("Section"))
     def handle_section_query(self, message):
