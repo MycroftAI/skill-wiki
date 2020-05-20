@@ -125,7 +125,7 @@ class WikipediaSkill(MycroftSkill):
       article = message.data.get("wiki_article")
       if article is not None:
         a = wiki.page(article)
-        section = article.section("Section")
+        section = a.section("Section")
         if section is not None:
           self.speak_dialog(section)
         else: 
@@ -133,7 +133,7 @@ class WikipediaSkill(MycroftSkill):
         return
       article = message.data.get("ArticleTitle")
       a = wiki.page(article)
-      section = article.section("Section")
+      section = a.section("Section")
       if section is not None:
           self.speak_dialog(section)
       else: 
