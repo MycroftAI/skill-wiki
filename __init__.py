@@ -28,10 +28,8 @@ EXCLUDED_IMAGES = [
 
 def wiki_image(pagetext):
     """ Fetch first best image from results.
-
         Arguments:
             pagetext: wikipedia result page
-
         Returns:
             (str) image url or empty string if no image available
     """
@@ -83,7 +81,6 @@ class WikipediaSkill(MycroftSkill):
                     require("wiki_article").require("spoken_lines"))
     def handle_tell_more(self, message):
         """ Follow up query handler, "tell me more".
-
             If a "spoken_lines" entry exists in the active contexts
             this can be triggered.
         """
@@ -103,9 +100,9 @@ class WikipediaSkill(MycroftSkill):
     def handle_whatsection_query(self, message):
       """tells about sections 
       """
-        if "ArticleTitle" is not None:
+      if "ArticleTitle" is not None:
           article = message.data.get("ArticleTitle")
-        else 
+      else: 
           article = message.data.get("wiki_article")
         article = wiki.page(article)
         sections = article.sections
@@ -129,7 +126,6 @@ class WikipediaSkill(MycroftSkill):
     @intent_file_handler("Random.intent")
     def handle_random_intent(self, message):
         """ Get a random wiki page.
-
             Uses the Special:Random page of wikipedia
         """
         # Talk to the user, as this can take a little time...
@@ -139,7 +135,6 @@ class WikipediaSkill(MycroftSkill):
 
     def _lookup(self, search, auto_suggest=True):
         """ Performs a wikipedia lookup and replies to the user.
-
             Arguments:
                 search: phrase to search for
         """
