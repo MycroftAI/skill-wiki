@@ -1,2 +1,2 @@
 .*(wiki|for|about|wikipedia)(?! (for|about)) (?P<ArticleTitle>.+)
-.*(everything)(.*(everything) (for|about|on) (?P<ArticleTitle>.+)
+.*(everything) (for|about|on)? (?P<ArticleTitle>.+)
