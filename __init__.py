@@ -116,7 +116,7 @@ class WikipediaSkill(MycroftSkill):
       
     
     @intent_handler(IntentBuilder("").require("ReadSection").
-                    one_of("ArticleTitle2", "wiki_article").
+                    one_of("ArticleTitle1", "wiki_article").
                     require("Section"))
     def handle_section_query(self, message):
       """reads requested section
@@ -139,7 +139,33 @@ class WikipediaSkill(MycroftSkill):
           self.speak_dialog(section)
       else: 
           self.speak_dialog("Sorry, that section does not exist")
-      
+          
+    @intent_handler(IntentBuilder("").require("Sort").
+                    one_of("ArticleTitle2", "wiki_article").
+                    require("Word"))
+    def handle_section_query(self, message):
+      """reads through the page and finds mentions of requested words or phrases
+      """
+      word = message.data.get("Word")
+      article = message.data.get("wiki_article")
+      if article is None:
+        article = message.data.get("ArticleTitle2")
+      r = wiki.search(article, 1)
+      a = wiki.page(r)
+      sectionI = []
+      inSummary = False
+      for i in a.summary:
+        if i == word:
+          inSummary = True
+      for i in a.sections:
+        for j in a.section(i):
+          if j == word:
+            sectionI.append(i)
+      if inSummary:
+        self.speak("The word was found in the summary and", i, ". Would you like me to read the sections?")
+      else:
+        self.speak("The word was found in", i, ". Would you like me to read the sections?")
+        
 
     @intent_file_handler("Random.intent")
     def handle_random_intent(self, message):
