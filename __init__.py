@@ -116,14 +116,12 @@ class WikipediaSkill(MycroftSkill):
       self.sections = sections
     
     @intent_handler(IntentBuilder("").require("ReadSection").
-                    one_of("ArticleTitle", "wiki_article").
+                    one_of("ArticleTitle2", "wiki_article").
                     require("Section"))
     def handle_section_query(self, message):
       """reads requested section
       """
-      self.speak("work")
       sInput = message.data.get("Section")
-      self.speak(sInput)
       article = message.data.get("wiki_article")
       if article is not None:
         a = wiki.page(article)
