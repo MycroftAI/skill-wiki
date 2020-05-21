@@ -101,7 +101,6 @@ class WikipediaSkill(MycroftSkill):
       """tells about sections 
       """
       article = message.data.get("ArticleTitle")
-      print(article)
       if article is not None:
           r = wiki.search(article)
           a = wiki.page(r)
@@ -123,6 +122,7 @@ class WikipediaSkill(MycroftSkill):
       """reads requested section
       """
       sInput = message.data.get("Section")
+      self.speak(sInput)
       article = message.data.get("wiki_article")
       if article is not None:
         a = wiki.page(article)
