@@ -1,1 +1,1 @@
-.*(about|read|are) ?(the)? (?P<Section>\S+) ?(section)? ?(about|of|from)? ?(?P<ArticleTitle2>.+)?
+.*(about|read|are) ?(the)? (?P<Section>.+) ?(section)? ?(about|of|from)? ?(?P<ArticleTitle2>.+)?
