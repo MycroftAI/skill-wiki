@@ -113,7 +113,7 @@ class WikipediaSkill(MycroftSkill):
       print(sections)
       for i in sections:
         self.speak(i)
-      self.sections = sections
+      
     
     @intent_handler(IntentBuilder("").require("ReadSection").
                     one_of("ArticleTitle2", "wiki_article").
