@@ -121,6 +121,7 @@ class WikipediaSkill(MycroftSkill):
     def handle_section_query(self, message):
       """reads requested section
       """
+      self.speak("work")
       sInput = message.data.get("Section")
       self.speak(sInput)
       article = message.data.get("wiki_article")
