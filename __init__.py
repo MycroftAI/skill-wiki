@@ -143,7 +143,7 @@ class WikipediaSkill(MycroftSkill):
     @intent_handler(IntentBuilder("").require("Sort").
                     one_of("ArticleTitle2", "wiki_article").
                     require("Word"))
-    def handle_section_query(self, message):
+    def handle_word_search(self, message):
       """reads through the page and finds mentions of requested words or phrases
       """
       word = message.data.get("Word")
