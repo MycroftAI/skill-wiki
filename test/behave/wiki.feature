@@ -4,6 +4,7 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about a person>"
      Then "skill-wiki" should reply with dialog from "searching.dialog"
+     And wait while speaking
      And mycroft reply should contain "<person>"
 
   Examples: user asks a question about a person
@@ -30,6 +31,7 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about a place>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
+     And wait while speaking
      And mycroft reply should contain "<place>"
 
   Examples: user asks a question about a place
@@ -43,6 +45,7 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about a thing>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
+     And wait while speaking
      And mycroft reply should contain "<thing>"
 
   Examples: user asks a question about a place
@@ -66,6 +69,7 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about an idea>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
+     And wait while speaking
      And mycroft reply should contain "<idea>"
 
   Examples: user asks a question about a place
