@@ -39,7 +39,6 @@ Feature: Wikipedia Skill
     | tell me about amsterdam | netherlands |
     | tell me about tokyo | japan |
     | tell me about antarctica | pole |
-    | tell me about sandwiches | sandwich |
 
   Scenario Outline: user asks a question about something
     Given an english speaking user
@@ -48,7 +47,7 @@ Feature: Wikipedia Skill
      And wait while speaking
      And mycroft reply should contain "<thing>"
 
-  Examples: user asks a question about a place
+  Examples: user asks a question about a thing
     | tell me about a thing | thing |
     | tell me about sandwiches | sandwich |
     | tell me about hammers | hammer |
@@ -72,7 +71,7 @@ Feature: Wikipedia Skill
      And wait while speaking
      And mycroft reply should contain "<idea>"
 
-  Examples: user asks a question about a place
+  Examples: user asks a question about an idea
     | tell me about an idea | idea |
     | tell me about philosophy | philosophy |
     | tell me about politics | politics |
