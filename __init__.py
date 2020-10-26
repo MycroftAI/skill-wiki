@@ -15,10 +15,7 @@
 import re
 import wikipedia as wiki
 from adapt.intent import IntentBuilder
-
-
-from mycroft.skills.core import (MycroftSkill, intent_handler,
-                                 intent_file_handler)
+from mycroft import MycroftSkill, intent_handler
 
 
 EXCLUDED_IMAGES = [
@@ -104,7 +101,7 @@ class WikipediaSkill(MycroftSkill):
             self.set_context("wiki_article", article)
             self.set_context("spoken_lines", str(lines_spoken_already+5))
 
-    @intent_file_handler("Random.intent")
+    @intent_handler("Random.intent")
     def handle_random_intent(self, message):
         """ Get a random wiki page.
 
