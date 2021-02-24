@@ -12,8 +12,5 @@ Mycroft.Delegate {
          text: sessionData.summary
          currentIndex: 0
          horizontalAlignment: Text.AlignHCenter
-         //font.pointSize: Kirigami.Units.gridUnit
-         // HACK TO SET BETTER SIZE ON RESPEAKER IMAGE
-         font.pointSize: Kirigami.Units.smallSpacing * 3
     }
 }
