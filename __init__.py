@@ -111,6 +111,36 @@ class PageMatch:
                    )
 
 
+def wiki_lookup(search, lang_code, auto_suggest=True):
+    """Performs a wikipedia article lookup.
+
+    Arguments:
+        search (str): phrase to search for
+        lang_code (str): wikipedia language code to use
+        auto_suggest (bool): wether or not to use autosuggest.
+
+    Returns:
+        PageMatch, PageDisambiguation or None
+    """
+    try:
+        # Use the version of Wikipedia appropriate to the request language
+        wiki.set_lang(lang_code)
+
+        # Fetch wiki article titles. This comes back
+        # as a list.  I.e. "beans" returns ['beans',
+        #     'Beans, Beans the Music Fruit', 'Phaseolus vulgaris',
+        #     'Baked beans', 'Navy beans']
+        results = wiki.search(search, 5)
+        if len(results) == 0:
+            return None
+
+        return PageMatch(results[0], auto_suggest)
+
+    except wiki.exceptions.DisambiguationError as e:
+        # Test: "tell me about john"
+        return PageDisambiguation(e.options)
+
+
 class WikipediaSkill(MycroftSkill):
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
@@ -200,9 +230,10 @@ class WikipediaSkill(MycroftSkill):
         Uses the Special:Random page of wikipedia
         """
         # Talk to the user, as this can take a little time...
+        lang_code = self.translate_namedvalues("wikipedia_lang")['code']
         search = wiki.random(pages=1)
         self.speak_dialog("searching", {"query": search})
-        self.handle_result(self._lookup(search))
+        self.handle_result(wiki_lookup(search, lang_code))
 
     def get_wiki_result(self, search):
         """Search wiki and Handle disambiguation.
@@ -216,10 +247,11 @@ class WikipediaSkill(MycroftSkill):
         Returns:
             PageMatch, PageDisambiguation or None
         """
+        lang_code = self.translate_namedvalues("wikipedia_lang")['code']
 
         def lookup(auto_suggest):
             try:
-                return self._lookup(search, auto_suggest)
+                return wiki_lookup(search, lang_code, auto_suggest)
             except wiki.PageError:
                 return None
             except Exception as e:
@@ -240,34 +272,6 @@ class WikipediaSkill(MycroftSkill):
         else:
             ret = res_auto_suggest
         return ret
-
-    def _lookup(self, search, auto_suggest=True):
-        """Performs a wikipedia lookup and replies to the user.
-
-        Arguments:
-            search: phrase to search for
-        Returns:
-            PageMatch, PageDisambiguation or None
-        """
-        try:
-            # Use the version of Wikipedia appropriate to the request language
-            lang_dict = self.translate_namedvalues("wikipedia_lang")
-            wiki.set_lang(lang_dict["code"])
-
-            # Fet wiki article titles. This comes back
-            # as a list.  I.e. "beans" returns ['beans',
-            #     'Beans, Beans the Music Fruit', 'Phaseolus vulgaris',
-            #     'Baked beans', 'Navy beans']
-            results = wiki.search(search, 5)
-            if len(results) == 0:
-                return None
-
-            return PageMatch(results[0], auto_suggest)
-
-        except wiki.exceptions.DisambiguationError as e:
-            # Test: "tell me about john"
-            return PageDisambiguation(e.options)
-
 
     def display_article(self, match):
         """Display the match page on a GUI if connected.
