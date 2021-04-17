@@ -25,13 +25,13 @@ EXCLUDED_IMAGES = [
 
 
 def wiki_image(pagetext):
-    """ Fetch first best image from results.
+    """Fetch first best image from results.
 
-        Arguments:
-            pagetext: wikipedia result page
+    Arguments:
+        pagetext: wikipedia result page
 
-        Returns:
-            (str) image url or empty string if no image available
+    Returns:
+        (str) image url or empty string if no image available
     """
     images = [i for i in pagetext.images if i not in EXCLUDED_IMAGES]
     if len(images) > 0:
@@ -41,11 +41,16 @@ def wiki_image(pagetext):
 
 
 class PageDisambiguation:
+    """Class representing a disambiguation request."""
     def __init__(self, options):
         self.options = options[:5]
 
 
 class PageMatch:
+    """Representation of a wiki page match.
+
+    This class contains the necessary data for the skills responses.
+    """
     def __init__(self, result=None, auto_suggest=None,
                  summary=None, lines=None, image=None):
 
@@ -67,6 +72,11 @@ class PageMatch:
         writes in inverted-pyramid style, so the first sentence is the
         most important, the second less important, etc.  Two sentences
         is all we ever need.
+
+        Arguments:
+            wiki result (str): Wikipedia match name
+            auto_suggest (bool): True if auto suggest was used to get this
+                                 result.
         """
         lines = 2
         summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
@@ -81,6 +91,11 @@ class PageMatch:
         return re.sub(r'\([^)]*\)|/[^/]*/', '', summary), lines
 
     def serialize(self):
+        """Serialize the object to string.
+
+        Returns:
+            (str) string represenation of the object
+        """
         return json.dumps(self.__dict__)
 
     @classmethod
@@ -110,7 +125,12 @@ class WikipediaSkill(MycroftSkill):
         self.handle_result(self.get_wiki_result(search))
 
     def handle_result(self, result):
-        """Handle result."""
+        """Handle result depending on result type.
+
+        Speaks appropriate feedback to user depending of the result type.
+        Arguments:
+            result (object): wiki result object to handle.
+        """
         if result is None:
             self.respond_no_match()
         elif isinstance(result, PageMatch):
@@ -123,7 +143,7 @@ class WikipediaSkill(MycroftSkill):
         self.speak_dialog("no entry found")
 
     def respond_match(self, match):
-        """Respond to user."""
+        """Read short summary to user."""
 
         self.display_article(match)
         # Remember context and speak results
@@ -139,17 +159,17 @@ class WikipediaSkill(MycroftSkill):
 
         choice = self.get_response('disambiguate', data={"options": options})
 
-        self.log.info('Choice is {}'.format(choice))
+        self.log.info('Disambiguation choice is {}'.format(choice))
         if choice:
             self.handle_result(self.get_wiki_result(choice))
 
     @intent_handler(IntentBuilder("").require("More").
                     require("wiki_article").require("spoken_lines"))
     def handle_tell_more(self, message):
-        """ Follow up query handler, "tell me more".
+        """Follow up query handler, "tell me more".
 
-            If a "spoken_lines" entry exists in the active contexts
-            this can be triggered.
+        If a "spoken_lines" entry exists in the active contexts
+        this can be triggered.
         """
         # Read more of the last article queried
         article = PageMatch.deserialize(message.data.get("wiki_article"))
@@ -176,7 +196,7 @@ class WikipediaSkill(MycroftSkill):
     def handle_random_intent(self, message):
         """ Get a random wiki page.
 
-            Uses the Special:Random page of wikipedia
+        Uses the Special:Random page of wikipedia
         """
         # Talk to the user, as this can take a little time...
         search = wiki.random(pages=1)
@@ -224,16 +244,19 @@ class WikipediaSkill(MycroftSkill):
             if len(results) == 0:
                 return None
 
-            self.log.info('Trying to get a summary...')
             return PageMatch(results[0], auto_suggest)
 
         except wiki.exceptions.DisambiguationError as e:
-            self.log.info('Disambiguation!')
             # Test:  "tell me about john"
             return PageDisambiguation(e.options)
 
 
     def display_article(self, match):
+        """Display the match page on a GUI if connected.
+
+        Arguments:
+            match (PageMatch): wiki page match
+        """
         self.gui.clear()
         self.gui['summary'] = match.summary
         self.gui['imgLink'] = match.image
