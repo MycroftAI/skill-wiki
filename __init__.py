@@ -125,11 +125,7 @@ class WikipediaSkill(MycroftSkill):
     def respond_match(self, match):
         """Respond to user."""
 
-        self.gui.clear()
-        self.gui['summary'] = match.summary
-        self.gui['imgLink'] = match.image
-        self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
-
+        self.display_article(match)
         # Remember context and speak results
         self.set_context("wiki_article", match.serialize())
         self.set_context("spoken_lines", str(match.lines))
@@ -170,12 +166,9 @@ class WikipediaSkill(MycroftSkill):
         if not summary:
             self.speak_dialog("thats all")
         else:
-            self.gui.clear()
-
-            self.gui['summary'] = summary
-            self.gui['imgLink'] = article.image
-            self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
+            self.display_article(article)
             self.speak(summary)
+            # Update context
             self.set_context("wiki_article", article.serialize())
             self.set_context("spoken_lines", str(lines_spoken_already+5))
 
@@ -239,6 +232,12 @@ class WikipediaSkill(MycroftSkill):
             # Test:  "tell me about john"
             return PageDisambiguation(e.options)
 
+
+    def display_article(self, match):
+        self.gui.clear()
+        self.gui['summary'] = match.summary
+        self.gui['imgLink'] = match.image
+        self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
 
 
 def create_skill():
