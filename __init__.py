@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import re
 import wikipedia as wiki
 from adapt.intent import IntentBuilder
@@ -39,6 +40,61 @@ def wiki_image(pagetext):
         return ''
 
 
+class PageDisambiguation:
+    def __init__(self, options):
+        self.options = options[:5]
+
+
+class PageMatch:
+    def __init__(self, result=None, auto_suggest=None,
+                 summary=None, lines=None, image=None):
+
+        if not (summary and lines):
+            summary, lines = self._wiki_page_summary(result, auto_suggest)
+
+        self.summary = summary
+        self.lines = lines
+
+        self.image = image or wiki_image(
+            wiki.page(result, auto_suggest=auto_suggest)
+        )
+        self.auto_suggest = auto_suggest
+        self.wiki_result = result
+
+    def _wiki_page_summary(self, result, auto_suggest):
+        """Request the summary for the result.
+
+        writes in inverted-pyramid style, so the first sentence is the
+        most important, the second less important, etc.  Two sentences
+        is all we ever need.
+        """
+        lines = 2
+        summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
+
+        if "==" in summary or len(summary) > 250:
+            # We hit the end of the article summary or hit a really long
+            # one.  Reduce to first line.
+            lines = 1
+            summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
+
+        # Clean text to make it more speakable
+        return re.sub(r'\([^)]*\)|/[^/]*/', '', summary), lines
+
+    def serialize(self):
+        return json.dumps(self.__dict__)
+
+    @classmethod
+    def deserialize(cls, data):
+        """Create a PageMatch object from serialized version."""
+        input_dict = json.loads(data)
+        return cls(result=input_dict['wiki_result'],
+                   auto_suggest=input_dict['auto_suggest'],
+                   summary=input_dict['summary'],
+                   lines=input_dict['lines'],
+                   image=input_dict['image']
+                   )
+
+
 class WikipediaSkill(MycroftSkill):
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
@@ -46,19 +102,50 @@ class WikipediaSkill(MycroftSkill):
     @intent_handler(IntentBuilder("").require("Wikipedia").
                     require("ArticleTitle"))
     def handle_wiki_query(self, message):
-        """ Extract what the user asked about and reply with info
-            from wikipedia.
+        """Extract what the user asked about and reply with info from wikipedia.
         """
-        # Talk to the user, as this can take a little time...
         search = message.data.get("ArticleTitle")
+        # Talk to the user, as this can take a little time...
         self.speak_dialog("searching", {"query": search})
+        self.handle_result(self.get_wiki_result(search))
 
-        try:
-            self._lookup(search)
-        except wiki.PageError:
-            self._lookup(search, auto_suggest=False)
-        except Exception as e:
-            self.log.error("Error: {0}".format(e))
+    def handle_result(self, result):
+        """Handle result."""
+        if result is None:
+            self.respond_no_match()
+        elif isinstance(result, PageMatch):
+            self.respond_match(result)
+        elif isinstance(result, PageDisambiguation):
+            self.respond_disambiguation(result)
+
+    def respond_no_match(self):
+        """Answer no match found."""
+        self.speak_dialog("no entry found")
+
+    def respond_match(self, match):
+        """Respond to user."""
+
+        self.gui.clear()
+        self.gui['summary'] = match.summary
+        self.gui['imgLink'] = match.image
+        self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
+
+        # Remember context and speak results
+        self.set_context("wiki_article", match.serialize())
+        self.set_context("spoken_lines", str(match.lines))
+        self.speak(match.summary)
+
+    def respond_disambiguation(self, disambiguation):
+        """Ask for which of the different matches should be used."""
+
+        options = (", ".join(disambiguation.options[:-1]) + " " +
+                   self.translate("or") + " " + disambiguation.options[-1])
+
+        choice = self.get_response('disambiguate', data={"options": options})
+
+        self.log.info('Choice is {}'.format(choice))
+        if choice:
+            self.handle_result(self.get_wiki_result(choice))
 
     @intent_handler(IntentBuilder("").require("More").
                     require("wiki_article").require("spoken_lines"))
@@ -69,16 +156,12 @@ class WikipediaSkill(MycroftSkill):
             this can be triggered.
         """
         # Read more of the last article queried
-        results = self.results
-        article = message.data.get("wiki_article")
+        article = PageMatch.deserialize(message.data.get("wiki_article"))
         lines_spoken_already = int(message.data.get("spoken_lines"))
 
-        summary_read = wiki.summary(article, lines_spoken_already)
-        try:
-            summary = wiki.summary(article, lines_spoken_already + 5)
-        except wiki.PageError:
-            summary = wiki.summary(article, lines_spoken_already + 5,
-                                   auto_suggest=False)
+        summary_read = wiki.summary(article.wiki_result, lines_spoken_already)
+        summary = wiki.summary(article.wiki_result, lines_spoken_already + 5,
+                               article.auto_suggest)
 
         # Remove already-spoken parts and section titles
         summary = summary[len(summary_read):]
@@ -89,16 +172,11 @@ class WikipediaSkill(MycroftSkill):
         else:
             self.gui.clear()
 
-            try:
-                pagetext = wiki.page(results[0])
-            except wiki.PageError:
-                pagetext = wiki.page(results[0], auto_suggest=False)
-
             self.gui['summary'] = summary
-            self.gui['imgLink'] = wiki_image(pagetext)
+            self.gui['imgLink'] = article.image
             self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
             self.speak(summary)
-            self.set_context("wiki_article", article)
+            self.set_context("wiki_article", article.serialize())
             self.set_context("spoken_lines", str(lines_spoken_already+5))
 
     @intent_handler("Random.intent")
@@ -110,18 +188,40 @@ class WikipediaSkill(MycroftSkill):
         # Talk to the user, as this can take a little time...
         search = wiki.random(pages=1)
         self.speak_dialog("searching", {"query": search})
-        self._lookup(search)
+        self.handle_result(self._lookup(search))
+
+    def get_wiki_result(self, search):
+        """Search wiki and Handle disambiguation."""
+        check_without_suggestion = False
+
+        check_without_suggestion = False
+        result = None
+        try:
+            result = self._lookup(search)
+            check_without_suggestion = isinstance(result, PageDisambiguation)
+        except wiki.PageError:
+            check_without_suggestion = True
+        except Exception as e:
+            self.log.error("Error: {0}".format(e))
+            return None
+
+        if check_without_suggestion:
+            result = self._lookup(search, auto_suggest=False) or result
+
+        return result
 
     def _lookup(self, search, auto_suggest=True):
-        """ Performs a wikipedia lookup and replies to the user.
+        """Performs a wikipedia lookup and replies to the user.
 
-            Arguments:
-                search: phrase to search for
+        Arguments:
+            search: phrase to search for
+        Returns:
+            PageMatch, PageDisambiguation or None
         """
         try:
             # Use the version of Wikipedia appropriate to the request language
-            dict = self.translate_namedvalues("wikipedia_lang")
-            wiki.set_lang(dict["code"])
+            lang_dict = self.translate_namedvalues("wikipedia_lang")
+            wiki.set_lang(lang_dict["code"])
 
             # First step is to get wiki article titles.  This comes back
             # as a list.  I.e. "beans" returns ['beans',
@@ -129,52 +229,16 @@ class WikipediaSkill(MycroftSkill):
             #     'Baked beans', 'Navy beans']
             results = wiki.search(search, 5)
             if len(results) == 0:
-                self.speak_dialog("no entry found")
-                return
+                return None
 
-            # Now request the summary for the first (best) match.  Wikipedia
-            # writes in inverted-pyramid style, so the first sentence is the
-            # most important, the second less important, etc.  Two sentences
-            # is all we ever need.
-            lines = 2
-            summary = wiki.summary(results[0], lines,
-                                   auto_suggest=auto_suggest)
-
-            if "==" in summary or len(summary) > 250:
-                # We hit the end of the article summary or hit a really long
-                # one.  Reduce to first line.
-                lines = 1
-                summary = wiki.summary(results[0], lines,
-                                       auto_suggest=auto_suggest)
-
-            # Now clean up the text and for speaking.  Remove words between
-            # parenthesis and brackets.  Wikipedia often includes birthdates
-            # in the article title, which breaks up the text badly.
-            summary = re.sub(r'\([^)]*\)|/[^/]*/', '', summary)
-
-            # Send to generate displays
-            self.gui.clear()
-            pagetext = wiki.page(results[0], auto_suggest=auto_suggest)
-            self.gui['summary'] = summary
-            self.gui['imgLink'] = wiki_image(pagetext)
-            self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
-
-            # Remember context and speak results
-            self.set_context("wiki_article", results[0])
-            self.set_context("spoken_lines", str(lines))
-            self.speak(summary)
-            self.results = results
+            self.log.info('Trying to get a summary...')
+            return PageMatch(results[0], auto_suggest)
 
         except wiki.exceptions.DisambiguationError as e:
+            self.log.info('Disambiguation!')
             # Test:  "tell me about john"
-            options = e.options[:5]
+            return PageDisambiguation(e.options)
 
-            option_list = (", ".join(options[:-1]) + " " +
-                           self.translate("or") + " " + options[-1])
-            choice = self.get_response('disambiguate',
-                                       data={"options": option_list})
-            if choice:
-                self._lookup(choice, auto_suggest=auto_suggest)
 
 
 def create_skill():
