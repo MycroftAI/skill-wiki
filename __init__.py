@@ -194,7 +194,7 @@ class WikipediaSkill(MycroftSkill):
             self.set_context("spoken_lines", str(lines_spoken_already+5))
 
     @intent_handler("Random.intent")
-    def handle_random_intent(self, message):
+    def handle_random_intent(self, _):
         """ Get a random wiki page.
 
         Uses the Special:Random page of wikipedia
@@ -254,7 +254,7 @@ class WikipediaSkill(MycroftSkill):
             lang_dict = self.translate_namedvalues("wikipedia_lang")
             wiki.set_lang(lang_dict["code"])
 
-            # First step is to get wiki article titles.  This comes back
+            # Fet wiki article titles. This comes back
             # as a list.  I.e. "beans" returns ['beans',
             #     'Beans, Beans the Music Fruit', 'Phaseolus vulgaris',
             #     'Baked beans', 'Navy beans']
@@ -265,7 +265,7 @@ class WikipediaSkill(MycroftSkill):
             return PageMatch(results[0], auto_suggest)
 
         except wiki.exceptions.DisambiguationError as e:
-            # Test:  "tell me about john"
+            # Test: "tell me about john"
             return PageDisambiguation(e.options)
 
 
