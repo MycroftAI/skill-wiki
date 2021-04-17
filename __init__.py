@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from concurrent.futures import ThreadPoolExecutor
 import json
 import re
 import wikipedia as wiki
@@ -204,24 +205,41 @@ class WikipediaSkill(MycroftSkill):
         self.handle_result(self._lookup(search))
 
     def get_wiki_result(self, search):
-        """Search wiki and Handle disambiguation."""
-        check_without_suggestion = False
+        """Search wiki and Handle disambiguation.
 
-        check_without_suggestion = False
-        result = None
-        try:
-            result = self._lookup(search)
-            check_without_suggestion = isinstance(result, PageDisambiguation)
-        except wiki.PageError:
-            check_without_suggestion = True
-        except Exception as e:
-            self.log.error("Error: {0}".format(e))
-            return None
+        This runs the auto_suggest and non-auto-suggest versions in parallell
+        to improve speed.
 
-        if check_without_suggestion:
-            result = self._lookup(search, auto_suggest=False) or result
+        Arguments:
+            search (str): String to seach for
 
-        return result
+        Returns:
+            PageMatch, PageDisambiguation or None
+        """
+
+        def lookup(auto_suggest):
+            try:
+                return self._lookup(search, auto_suggest)
+            except wiki.PageError:
+                return None
+            except Exception as e:
+                self.log.error("Error: {0}".format(e))
+                return None
+
+        with ThreadPoolExecutor() as pool:
+            res_auto_suggest, res_without_auto_suggest = (
+                list(pool.map(lookup, (True, False)))
+            )
+        # Check the results, return PageMatch (autosuggest
+        # preferred) otherwise return the autosuggest
+        # PageDisambiguation.
+        if ((isinstance(res_auto_suggest, PageDisambiguation) or
+             (res_auto_suggest is None)) and
+                isinstance(res_without_auto_suggest, PageMatch)):
+            ret = res_without_auto_suggest
+        else:
+            ret = res_auto_suggest
+        return ret
 
     def _lookup(self, search, auto_suggest=True):
         """Performs a wikipedia lookup and replies to the user.
