@@ -18,6 +18,7 @@ import re
 import wikipedia as wiki
 from adapt.intent import IntentBuilder
 from mycroft import MycroftSkill, intent_handler
+from mycroft.util.format import join_list
 
 
 EXCLUDED_IMAGES = [
@@ -185,9 +186,7 @@ class WikipediaSkill(MycroftSkill):
     def respond_disambiguation(self, disambiguation):
         """Ask for which of the different matches should be used."""
 
-        options = (", ".join(disambiguation.options[:-1]) + " " +
-                   self.translate("or") + " " + disambiguation.options[-1])
-
+        options = join_list(disambiguation.options, 'or', lang=self.lang)
         choice = self.get_response('disambiguate', data={"options": options})
 
         self.log.info('Disambiguation choice is {}'.format(choice))
