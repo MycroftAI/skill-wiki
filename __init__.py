@@ -145,6 +145,7 @@ def wiki_lookup(search, lang_code, auto_suggest=True):
 class WikipediaSkill(MycroftSkill):
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
+        self._match = None
 
     @intent_handler(IntentBuilder("").require("Wikipedia").
                     require("ArticleTitle"))
@@ -179,7 +180,8 @@ class WikipediaSkill(MycroftSkill):
 
         self.display_article(match)
         # Remember context and speak results
-        self.set_context("wiki_article", match.serialize())
+        self._match = match
+        self.set_context("wiki_article", "")
         self.set_context("spoken_lines", str(match.lines))
         self.speak(match.summary)
 
@@ -202,7 +204,11 @@ class WikipediaSkill(MycroftSkill):
         this can be triggered.
         """
         # Read more of the last article queried
-        article = PageMatch.deserialize(message.data.get("wiki_article"))
+        if not self._match:
+            self.log.error('handle_tell_more called without previous match')
+            return
+
+        article = self._match
         lines_spoken_already = int(message.data.get("spoken_lines"))
 
         summary_read = wiki.summary(article.wiki_result, lines_spoken_already)
@@ -219,7 +225,7 @@ class WikipediaSkill(MycroftSkill):
             self.display_article(article)
             self.speak(summary)
             # Update context
-            self.set_context("wiki_article", article.serialize())
+            self.set_context("wiki_article", "")
             self.set_context("spoken_lines", str(lines_spoken_already+5))
 
     @intent_handler("Random.intent")
