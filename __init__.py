@@ -145,6 +145,8 @@ def wiki_lookup(search, lang_code, auto_suggest=True):
 class WikipediaSkill(MycroftSkill):
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
+        self._match = None
+        self._lines_spoken_already = 0
 
     @intent_handler(IntentBuilder("").require("Wikipedia").
                     require("ArticleTitle"))
@@ -179,8 +181,9 @@ class WikipediaSkill(MycroftSkill):
 
         self.display_article(match)
         # Remember context and speak results
-        self.set_context("wiki_article", match.serialize())
-        self.set_context("spoken_lines", str(match.lines))
+        self._match = match
+        self.set_context("wiki_article", "")
+        self._lines_spoken_already = match.lines
         self.speak(match.summary)
 
     def respond_disambiguation(self, disambiguation):
@@ -193,8 +196,7 @@ class WikipediaSkill(MycroftSkill):
         if choice:
             self.handle_result(self.get_wiki_result(choice))
 
-    @intent_handler(IntentBuilder("").require("More").
-                    require("wiki_article").require("spoken_lines"))
+    @intent_handler(IntentBuilder("").require("More").require("wiki_article"))
     def handle_tell_more(self, message):
         """Follow up query handler, "tell me more".
 
@@ -202,12 +204,18 @@ class WikipediaSkill(MycroftSkill):
         this can be triggered.
         """
         # Read more of the last article queried
-        article = PageMatch.deserialize(message.data.get("wiki_article"))
-        lines_spoken_already = int(message.data.get("spoken_lines"))
+        if not self._match:
+            self.log.error('handle_tell_more called without previous match')
+            return
 
-        summary_read = wiki.summary(article.wiki_result, lines_spoken_already)
-        summary = wiki.summary(article.wiki_result, lines_spoken_already + 5,
-                               article.auto_suggest)
+        article = self._match
+        summary_read = wiki.summary(article.wiki_result,
+                                    self._lines_spoken_already,
+                                    auto_suggest=article.auto_suggest)
+        summary = wiki.summary(article.wiki_result,
+                               self._lines_spoken_already + 5,
+                               auto_suggest=article.auto_suggest)
+        self._lines_spoken_already += 5
 
         # Remove already-spoken parts and section titles
         summary = summary[len(summary_read):]
@@ -219,8 +227,7 @@ class WikipediaSkill(MycroftSkill):
             self.display_article(article)
             self.speak(summary)
             # Update context
-            self.set_context("wiki_article", article.serialize())
-            self.set_context("spoken_lines", str(lines_spoken_already+5))
+            self.set_context("wiki_article", "")
 
     @intent_handler("Random.intent")
     def handle_random_intent(self, _):
