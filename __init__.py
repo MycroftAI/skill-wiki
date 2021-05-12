@@ -211,9 +211,10 @@ class WikipediaSkill(MycroftSkill):
         article = self._match
         lines_spoken_already = int(message.data.get("spoken_lines"))
 
-        summary_read = wiki.summary(article.wiki_result, lines_spoken_already)
+        summary_read = wiki.summary(article.wiki_result, lines_spoken_already,
+                                    auto_suggest=article.auto_suggest)
         summary = wiki.summary(article.wiki_result, lines_spoken_already + 5,
-                               article.auto_suggest)
+                               auto_suggest=article.auto_suggest)
 
         # Remove already-spoken parts and section titles
         summary = summary[len(summary_read):]
