@@ -53,17 +53,14 @@ class PageMatch:
 
     This class contains the necessary data for the skills responses.
     """
-    def __init__(self, result=None, auto_suggest=None,
-                 summary=None, lines=None, image=None):
+    def __init__(self, result=None, auto_suggest=None):
 
-        if not (summary and lines):
-            summary, lines = self._wiki_page_summary(result, auto_suggest)
+        summary, lines = self._wiki_page_summary(result, auto_suggest)
 
         self.summary = summary
         self.lines = lines
 
-        self.image = image or wiki_image(
-            wiki.page(result, auto_suggest=auto_suggest)
+        self.image = wiki_image(wiki.page(result, auto_suggest=auto_suggest)
         )
         self.auto_suggest = auto_suggest
         self.wiki_result = result
@@ -91,25 +88,6 @@ class PageMatch:
 
         # Clean text to make it more speakable
         return re.sub(r'\([^)]*\)|/[^/]*/', '', summary), lines
-
-    def serialize(self):
-        """Serialize the object to string.
-
-        Returns:
-            (str) string represenation of the object
-        """
-        return json.dumps(self.__dict__)
-
-    @classmethod
-    def deserialize(cls, data):
-        """Create a PageMatch object from serialized version."""
-        input_dict = json.loads(data)
-        return cls(result=input_dict['wiki_result'],
-                   auto_suggest=input_dict['auto_suggest'],
-                   summary=input_dict['summary'],
-                   lines=input_dict['lines'],
-                   image=input_dict['image']
-                   )
 
 
 def wiki_lookup(search, lang_code, auto_suggest=True):
