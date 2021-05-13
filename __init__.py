@@ -59,20 +59,15 @@ class PageMatch:
     def __init__(self, result=None, auto_suggest=None,
                  auto_more=False):
 
+        self.wiki_result = result
+        self.auto_suggest = auto_suggest
         self.auto_more = auto_more
 
-        summary, lines = self._wiki_page_summary(result, auto_suggest)
+        self.summary = self._wiki_page_summary(result, auto_suggest)
+        self.intro_length = self._get_intro_length()
+        self.image = wiki_image(wiki.page(result, auto_suggest=auto_suggest))
 
-        self.summary = summary
-        self.lines = lines
-
-        self.image = wiki_image(
-            wiki.page(result, auto_suggest=auto_suggest)
-        )
-        self.auto_suggest = auto_suggest
-        self.wiki_result = result
-
-    def _wiki_page_summary(self, result, auto_suggest):
+    def _wiki_page_summary(self, result: str, auto_suggest: bool) -> list([str]):
         """Request the summary for the result.
 
         writes in inverted-pyramid style, so the first sentence is the
@@ -83,28 +78,38 @@ class PageMatch:
             wiki result (str): Wikipedia match name
             auto_suggest (bool): True if auto suggest was used to get this
                                  result.
+
+        Returns
+            List: summary as list of sentences
         """
-        if self.auto_more:
-            lines = 2
-            summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
-
-            if "==" in summary or len(summary) > 250:
-                # We hit the end of the article summary or hit a really long
-                # one.  Reduce to first line.
-                lines = 1
-                summary = wiki.summary(
-                    result, lines, auto_suggest=auto_suggest)
-        else:
-            lines = 20
-            summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
-
-            if "==" in summary or len(summary) > 2500:
-                lines = 2
-                summary = wiki.summary(
-                    result, lines, auto_suggest=auto_suggest)
+        summary = wiki.summary(result, auto_suggest=auto_suggest)
 
         # Clean text to make it more speakable
-        return re.sub(r'\([^)]*\)|/[^/]*/', '', summary), lines
+        return re.sub(r'\([^)]*\)|/[^/]*/', '', summary).split('.')
+
+    def _get_intro_length(self):
+        default_intro = '.'.join(self.summary[:2])
+        if len(default_intro) > 250 or '==' in default_intro:
+            return 1
+        else:
+            return 2
+
+    def get_intro(self):
+        """Get the intro sentences for the match."""
+        return self[:self.intro_length]
+
+    def __getitem__(self, val):
+        """Implements slicing for the class, returning a chunk of text.
+
+        Can either return a single sentence from the article or a range
+        of sentences. The sentences are prepared and formated into a single
+        string.
+        """
+        lines = self.summary.__getitem__(val)
+        if lines:
+            return '.'.join(lines) + '.'
+        else:
+            return ''
 
 
 def wiki_lookup(search, lang_code, auto_suggest=True, auto_more=False):
@@ -190,17 +195,15 @@ class WikipediaSkill(CommonQuerySkill):
 
     def respond_match(self, match):
         """Read short summary to user."""
-
         self.display_article(match)
         # Remember context and speak results
         self._match = match
         self.set_context("wiki_article", "")
-        self._lines_spoken_already = match.lines
-        self.speak(match.summary)
+        self._lines_spoken_already = match.intro_length
+        self.speak(match.get_intro())
 
     def respond_disambiguation(self, disambiguation):
         """Ask for which of the different matches should be used."""
-
         options = join_list(disambiguation.options, 'or', lang=self.lang)
         choice = self.get_response('disambiguate', data={"options": options})
 
@@ -221,25 +224,18 @@ class WikipediaSkill(CommonQuerySkill):
             return
 
         article = self._match
-        summary_read = wiki.summary(article.wiki_result,
-                                    self._lines_spoken_already,
-                                    auto_suggest=article.auto_suggest)
-        summary = wiki.summary(article.wiki_result,
-                               self._lines_spoken_already + 5,
-                               auto_suggest=article.auto_suggest)
-        self._lines_spoken_already += 5
+        start = self._lines_spoken_already
+        stop = self._lines_spoken_already + 5
+        summary = article[start:stop]
 
-        # Remove already-spoken parts and section titles
-        summary = summary[len(summary_read):]
-        summary = re.sub(r'\([^)]*\)|/[^/]*/|== [^=]+ ==', '', summary)
-
-        if not summary:
-            self.speak_dialog("thats all")
-        else:
+        if summary:
             self.display_article(article)
             self.speak(summary)
             # Update context
+            self._lines_spoken_already += 5
             self.set_context("wiki_article", "")
+        else:
+            self.speak_dialog("thats all")
 
     @intent_handler("Random.intent")
     def handle_random_intent(self, _):
