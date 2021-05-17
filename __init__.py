@@ -21,6 +21,7 @@ from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 from mycroft.skills.skill_data import read_vocab_file
 from mycroft.util.format import join_list
 from mycroft.util.log import LOG
+from quebra_frases import sentence_tokenize
 
 EXCLUDED_IMAGES = [
     'https://upload.wikimedia.org/wikipedia/commons/7/73/Blue_pencil.svg'
@@ -85,7 +86,9 @@ class PageMatch:
         summary = wiki.summary(result, auto_suggest=auto_suggest)
 
         # Clean text to make it more speakable
-        return re.sub(r'\([^)]*\)|/[^/]*/', '', summary).split('.')
+        summary = re.sub(r'\([^)]*\)|/[^/]*/', '', summary)
+        summary = re.sub(r'\s+', ' ', summary)
+        return sentence_tokenize(summary)
 
     def _get_intro_length(self):
         default_intro = '.'.join(self.summary[:2])
@@ -107,7 +110,7 @@ class PageMatch:
         """
         lines = self.summary.__getitem__(val)
         if lines:
-            return '.'.join(lines) + '.'
+            return ''.join(lines)
         else:
             return ''
 
