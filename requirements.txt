@@ -1,1 +1,2 @@
 wikipedia==1.4.0
+quebra-frases~=0.3.4

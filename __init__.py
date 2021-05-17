@@ -15,6 +15,8 @@
 from concurrent.futures import ThreadPoolExecutor
 import json
 import re
+
+from quebra_frases import sentence_tokenize
 import wikipedia as wiki
 from adapt.intent import IntentBuilder
 from mycroft import MycroftSkill, intent_handler
@@ -76,7 +78,9 @@ class PageMatch:
         summary = wiki.summary(result, auto_suggest=auto_suggest)
 
         # Clean text to make it more speakable
-        return re.sub(r'\([^)]*\)|/[^/]*/', '', summary).split('.')
+        summary = re.sub(r'\([^)]*\)|/[^/]*/', '', summary)
+        summary = re.sub(r'\s+', ' ', summary)
+        return sentence_tokenize(summary)
 
     def _get_intro_length(self):
         default_intro = '.'.join(self.summary[:2])
@@ -98,7 +102,7 @@ class PageMatch:
         """
         lines = self.summary.__getitem__(val)
         if lines:
-            return '.'.join(lines) + '.'
+            return ''.join(lines)
         else:
             return ''
 
