@@ -92,25 +92,6 @@ class PageMatch:
         # Clean text to make it more speakable
         return re.sub(r'\([^)]*\)|/[^/]*/', '', summary), lines
 
-    def serialize(self):
-        """Serialize the object to string.
-
-        Returns:
-            (str) string represenation of the object
-        """
-        return json.dumps(self.__dict__)
-
-    @classmethod
-    def deserialize(cls, data):
-        """Create a PageMatch object from serialized version."""
-        input_dict = json.loads(data)
-        return cls(result=input_dict['wiki_result'],
-                   auto_suggest=input_dict['auto_suggest'],
-                   summary=input_dict['summary'],
-                   lines=input_dict['lines'],
-                   image=input_dict['image']
-                   )
-
 
 def wiki_lookup(search, lang_code, auto_suggest=True):
     """Performs a wikipedia article lookup.
