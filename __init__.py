@@ -17,7 +17,9 @@ import json
 import re
 import wikipedia as wiki
 from adapt.intent import IntentBuilder
+
 from mycroft import MycroftSkill, intent_handler
+from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 from mycroft.util.format import join_list
 
 
@@ -123,11 +125,66 @@ def wiki_lookup(search, lang_code, auto_suggest=True):
         return PageDisambiguation(e.options)
 
 
-class WikipediaSkill(MycroftSkill):
+class WikipediaSkill(CommonQuerySkill):
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
         self._match = None
         self._lines_spoken_already = 0
+
+    def CQS_match_query_phrase(self, query):
+        answer = self.test_query_against_common_structures(query)
+
+        if answer is None:
+            answer = self.test_query_against_regex(query)
+
+        if answer:
+            return (query, CQSMatchLevel.CATEGORY, answer)
+
+        return None
+
+    def test_query_against_common_structures(self, query):
+        # Only ones that make sense in
+        # <question_word> <question_verb> <noun>
+        question_words = ['who', 'whom', 'what', 'when']
+        # Note the spaces
+        question_verbs = [' is', '\'s', 's', ' are', '\'re',
+                        're', ' did', ' was', ' were']
+        articles = ['a', 'an', 'the', 'any']
+
+        for noun in question_words:
+            for verb in question_verbs:
+                for article in [i + ' ' for i in articles] + ['']:
+                    test = noun + verb + ' ' + article
+                    if query[:len(test)] == test:
+                        answer = self.respond(query[len(test):])
+                        break
+
+    def test_query_against_regex(self, query):
+        regex_file = self.find_resource("article.title.rx", "regex")
+        with open(regex_file) as regex:
+            for pattern in regex.readlines():
+                self.log.debug(f"Regex pattern: {pattern}")
+                match = re.search(pattern, query)
+                if match:
+                    try:
+                        title = match.group("ArticleTitle").strip().lower()
+                        self.log.debug(f"Regex name extracted: {title}")
+                        if title:
+                            return self.respond(title)
+                    except IndexError:
+                        pass
+
+    def respond(self, query):
+        result = self.get_wiki_result(query)
+        if result is not None:
+            if isinstance(result, PageMatch):
+                result = result.summary
+            elif isinstance(result, PageDisambiguation):
+                # currently uinsupported under common query
+                #self.respond_disambiguation(result)
+                pass
+
+        return result
 
     @intent_handler(IntentBuilder("").require("Wikipedia").
                     require("ArticleTitle"))
@@ -240,6 +297,7 @@ class WikipediaSkill(MycroftSkill):
             try:
                 return wiki_lookup(search, lang_code, auto_suggest)
             except wiki.PageError:
+                self.log.warning(f"Wiki page error searching for: {search}")
                 return None
             except Exception as e:
                 self.log.error("Error: {0}".format(e))
