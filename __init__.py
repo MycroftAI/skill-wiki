@@ -178,7 +178,10 @@ class WikipediaSkill(CommonQuerySkill):
         result = self.get_wiki_result(query)
         if result is not None:
             if isinstance(result, PageMatch):
+                self._match = result
+                self.set_context("wiki_article", "")
                 result = result.summary
+
             elif isinstance(result, PageDisambiguation):
                 # currently uinsupported under common query
                 #self.respond_disambiguation(result)
