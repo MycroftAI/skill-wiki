@@ -12,14 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from concurrent.futures import ThreadPoolExecutor
-import json
 import re
 import wikipedia as wiki
+from concurrent.futures import ThreadPoolExecutor
 from adapt.intent import IntentBuilder
-from mycroft import MycroftSkill, intent_handler
+from mycroft import intent_handler
 from mycroft.util.format import join_list
+from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
+from mycroft.skills.skill_data import read_vocab_file
 
+from mycroft.util.log import LOG
+
+# to exit screen - self.gui.release()
 
 EXCLUDED_IMAGES = [
     'https://upload.wikimedia.org/wikipedia/commons/7/73/Blue_pencil.svg'
@@ -54,7 +58,10 @@ class PageMatch:
     This class contains the necessary data for the skills responses.
     """
     def __init__(self, result=None, auto_suggest=None,
-                 summary=None, lines=None, image=None):
+                 summary=None, lines=None, image=None,
+                 auto_more=False):
+
+        self.auto_more = auto_more
 
         if not (summary and lines):
             summary, lines = self._wiki_page_summary(result, auto_suggest)
@@ -79,40 +86,33 @@ class PageMatch:
             wiki result (str): Wikipedia match name
             auto_suggest (bool): True if auto suggest was used to get this
                                  result.
+            self.auto_more (bool): From config "cq_auto_more": if true will
+                                   return abbreviated (2 lines) and handle 
+                                   'more'. If false (or not present), will
+                                   return entire abstract and handle 'stop'
         """
-        lines = 2
-        summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
-
-        if "==" in summary or len(summary) > 250:
-            # We hit the end of the article summary or hit a really long
-            # one.  Reduce to first line.
-            lines = 1
+        if self.auto_more:
+            lines = 2
             summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
+
+            if "==" in summary or len(summary) > 250:
+                # We hit the end of the article summary or hit a really long
+                # one.  Reduce to first line.
+                lines = 1
+                summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
+        else:
+            lines = 20
+            summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
+
+            if "==" in summary or len(summary) > 2500:
+                lines = 2
+                summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
+
 
         # Clean text to make it more speakable
         return re.sub(r'\([^)]*\)|/[^/]*/', '', summary), lines
 
-    def serialize(self):
-        """Serialize the object to string.
-
-        Returns:
-            (str) string represenation of the object
-        """
-        return json.dumps(self.__dict__)
-
-    @classmethod
-    def deserialize(cls, data):
-        """Create a PageMatch object from serialized version."""
-        input_dict = json.loads(data)
-        return cls(result=input_dict['wiki_result'],
-                   auto_suggest=input_dict['auto_suggest'],
-                   summary=input_dict['summary'],
-                   lines=input_dict['lines'],
-                   image=input_dict['image']
-                   )
-
-
-def wiki_lookup(search, lang_code, auto_suggest=True):
+def wiki_lookup(search, lang_code, auto_suggest=True, auto_more=False):
     """Performs a wikipedia article lookup.
 
     Arguments:
@@ -135,18 +135,40 @@ def wiki_lookup(search, lang_code, auto_suggest=True):
         if len(results) == 0:
             return None
 
-        return PageMatch(results[0], auto_suggest)
+        return PageMatch(results[0], auto_suggest, auto_more=auto_more)
 
     except wiki.exceptions.DisambiguationError as e:
         # Test: "tell me about john"
         return PageDisambiguation(e.options)
 
 
-class WikipediaSkill(MycroftSkill):
+class WikipediaSkill(CommonQuerySkill):
+    """
+    question_words = ['who', 'whom', 'what', 'when']
+    # Note the spaces, also note, not sure 
+    # how this is going to translate!
+    question_verbs = [' is', '\'s', 's', ' are', '\'re',
+                      're', ' did', ' was', ' were']
+    articles = ['a', 'an', 'the', 'any']
+    """
+
     def __init__(self):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
         self._match = None
         self._lines_spoken_already = 0
+
+        fname = self.find_resource("Wikipedia.voc", res_dirname="vocab")
+        temp = read_vocab_file(fname)
+        vocab = []
+        for item in temp:
+            vocab.append( " ".join(item) )
+        self.sorted_vocab = sorted(vocab, key=lambda x: (-len(x), x))
+
+        self.translated_question_words = self.translate_list("question_words")
+        self.translated_question_verbs = self.translate_list("question_verbs")
+        self.translated_articles = self.translate_list("articles")
+
+        self.auto_more = self.config_core.get('cq_auto_more', False)
 
     @intent_handler(IntentBuilder("").require("Wikipedia").
                     require("ArticleTitle"))
@@ -239,7 +261,7 @@ class WikipediaSkill(MycroftSkill):
         lang_code = self.translate_namedvalues("wikipedia_lang")['code']
         search = wiki.random(pages=1)
         self.speak_dialog("searching", {"query": search})
-        self.handle_result(wiki_lookup(search, lang_code))
+        self.handle_result(wiki_lookup(search, lang_code, auto_more=self.auto_more))
 
     def get_wiki_result(self, search):
         """Search wiki and Handle disambiguation.
@@ -257,7 +279,7 @@ class WikipediaSkill(MycroftSkill):
 
         def lookup(auto_suggest):
             try:
-                return wiki_lookup(search, lang_code, auto_suggest)
+                return wiki_lookup(search, lang_code, auto_suggest, auto_more=self.auto_more)
             except wiki.PageError:
                 return None
             except Exception as e:
@@ -265,8 +287,12 @@ class WikipediaSkill(MycroftSkill):
                 return None
 
         with ThreadPoolExecutor() as pool:
+            """rather than gut it I simply disable 
+            it for now but once fixed change this to 
+            (True, False). This fixes the Jira bug
+            wiki returns cat for what is an automobile"""
             res_auto_suggest, res_without_auto_suggest = (
-                list(pool.map(lookup, (True, False)))
+                list(pool.map(lookup, (False, False)))
             )
         # Check the results, return PageMatch (autosuggest
         # preferred) otherwise return the autosuggest
@@ -290,6 +316,46 @@ class WikipediaSkill(MycroftSkill):
         self.gui['imgLink'] = match.image
         self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
 
+    def respond(self, query):
+        result = self.get_wiki_result(query)
+        if result is not None:
+            if isinstance(result, PageMatch):
+                result = result.summary
+            elif isinstance(result, PageDisambiguation):
+                # we auto disambiguate here 
+                if len(result.options) > 0:
+                    result = self.get_wiki_result(result.options[0])
+                    if result is not None:
+                        result = result.summary
+                else:
+                    result = None
+
+        return result
+
+    def fix_input(self, query):
+        for noun in self.translated_question_words:
+            for verb in self.translated_question_verbs:
+                for article in [i + ' ' for i in self.translated_articles] + ['']:
+                    test = noun + verb + ' ' + article
+                    if query[:len(test)] == test:
+                        return query[len(test):]
+        return query
+
+    def CQS_match_query_phrase(self, query):
+        answer = None
+        test = self.fix_input(query)
+
+        if test is not None:
+            answer = self.respond(test)
+
+        if answer:
+            return (query, CQSMatchLevel.CATEGORY, answer)
+        return answer
+
+    def stop(self):
+        self.gui.release()
+        pass
 
 def create_skill():
     return WikipediaSkill()
+
