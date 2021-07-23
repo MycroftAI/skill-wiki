@@ -4,24 +4,27 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about a person>"
      Then "skill-wiki" should reply with dialog from "searching.dialog"
-     And wait while speaking
      And mycroft reply should contain "<person>"
+     Then dialog is stopped
 
   Examples: user asks a question about a person
     | tell me about a person | person |
+    | ask wiki who was abraham lincoln | lincoln |
     | tell me about abraham lincoln | lincoln |
-    | tell me about nelson mandela | mandela |
-    | tell me about queen elizabeth | elizabeth |
-    | tell me about Mahatma Gandhi | gandhi |
+    | what does wiki say about nelson mandela | mandela |
+    | ask wiki who is queen elizabeth | elizabeth |
+    | ask wikipedia who was Mahatma Gandhi | gandhi |
     | tell me about the president of the united states | president |
+    | ask wikipedia who is the secretary general of the united nations | secretary |
+    | ask wiki who is the president of the united states | president |
     | tell me about the secretary general of the united nations | secretary |
 
-  @xfail
-  Scenario Outline: Failing user asks a question about a person
+  Scenario Outline: trigger a disambiguate response
     Given an english speaking user
      When the user says "<tell me about a person>"
      Then "skill-wiki" should reply with dialog from "searching.dialog"
      And mycroft reply should contain "<person>"
+     Then dialog is stopped
 
   Examples: user asks a question about a person
     | tell me about a person | person |
@@ -31,48 +34,53 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about a place>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
-     And wait while speaking
      And mycroft reply should contain "<place>"
+     Then dialog is stopped
 
   Examples: user asks a question about a place
     | tell me about a place | place |
-    | tell me about amsterdam | netherlands |
+    | ask wikipedia where is amsterdam | netherlands |
     | tell me about tokyo | japan |
-    | tell me about antarctica | pole |
+    | ask wiki where is the grand canyon | arizona |
+    | what does wiki know about pikes peak | peak |
+    | ask wiki where is kathmandu | nepal |
 
   Scenario Outline: user asks a question about something
     Given an english speaking user
      When the user says "<tell me about a thing>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
-     And wait while speaking
      And mycroft reply should contain "<thing>"
+     Then dialog is stopped
 
   Examples: user asks a question about a thing
     | tell me about a thing | thing |
     | tell me about sandwiches | sandwich |
     | tell me about hammers | hammer |
+    | ask wiki what is a chain saw | saw |
+    | what does wiki know about the universe | universe |
 
-  @xfail
   # Jira MS-79 https://mycroft.atlassian.net/browse/MS-79
-  Scenario Outline: failing queries
+  Scenario Outline: fixed failing queries
     Given an english speaking user
      When the user says "<tell me about failures>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
      And mycroft reply should contain "<failure>"
+     Then dialog is stopped
 
   Examples: failing things
     | tell me about failures | failure |
-    | tell me about automobiles | automobile |
+    | tell me about automobiles | car |
 
   Scenario Outline: user asks a question about an idea
     Given an english speaking user
      When the user says "<tell me about an idea>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
-     And wait while speaking
      And mycroft reply should contain "<idea>"
+     Then dialog is stopped
 
   Examples: user asks a question about an idea
     | tell me about an idea | idea |
     | tell me about philosophy | philosophy |
     | tell me about politics | politics |
     | tell me about science | knowledge |
+    | ask wiki what is mathematics | mathematics |
