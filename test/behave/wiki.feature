@@ -58,17 +58,6 @@ Feature: Wikipedia Skill
     | tell me about hammers | hammer |
     | ask wiki what is a chain saw | saw |
     | what does wiki know about the universe | universe |
-
-  # Jira MS-79 https://mycroft.atlassian.net/browse/MS-79
-  Scenario Outline: fixed failing queries
-    Given an english speaking user
-     When the user says "<tell me about failures>"
-     Then "mycroft-wiki" should reply with dialog from "searching.dialog"
-     And mycroft reply should contain "<failure>"
-     Then dialog is stopped
-
-  Examples: failing things
-    | tell me about failures | failure |
     | tell me about automobiles | car |
 
   Scenario Outline: user asks a question about an idea

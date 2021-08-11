@@ -23,8 +23,6 @@ from mycroft.skills.skill_data import read_vocab_file
 
 from mycroft.util.log import LOG
 
-# to exit screen - self.gui.release()
-
 EXCLUDED_IMAGES = [
     'https://upload.wikimedia.org/wikipedia/commons/7/73/Blue_pencil.svg'
 ]
@@ -86,10 +84,6 @@ class PageMatch:
             wiki result (str): Wikipedia match name
             auto_suggest (bool): True if auto suggest was used to get this
                                  result.
-            self.auto_more (bool): From config "cq_auto_more": if true will
-                                   return abbreviated (2 lines) and handle 
-                                   'more'. If false (or not present), will
-                                   return entire abstract and handle 'stop'
         """
         if self.auto_more:
             lines = 2
@@ -143,16 +137,11 @@ def wiki_lookup(search, lang_code, auto_suggest=True, auto_more=False):
 
 
 class WikipediaSkill(CommonQuerySkill):
-    """
-    question_words = ['who', 'whom', 'what', 'when']
-    # Note the spaces, also note, not sure 
-    # how this is going to translate!
-    question_verbs = [' is', '\'s', 's', ' are', '\'re',
-                      're', ' did', ' was', ' were']
-    articles = ['a', 'an', 'the', 'any']
-    """
-
     def __init__(self):
+       """ self.auto_more (bool): From config "cq_auto_more": if true will
+           return abbreviated (2 lines) and handle 
+           'more'. If false (or not present), will
+           return entire abstract and handle 'stop'"""
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
         self._match = None
         self._lines_spoken_already = 0
@@ -354,7 +343,6 @@ class WikipediaSkill(CommonQuerySkill):
 
     def stop(self):
         self.gui.release()
-        pass
 
 def create_skill():
     return WikipediaSkill()
