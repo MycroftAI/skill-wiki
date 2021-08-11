@@ -138,7 +138,7 @@ def wiki_lookup(search, lang_code, auto_suggest=True, auto_more=False):
 
 class WikipediaSkill(CommonQuerySkill):
     def __init__(self):
-       """ self.auto_more (bool): From config "cq_auto_more": if true will
+        """ self.auto_more (bool): From config "cq_auto_more": if true will
            return abbreviated (2 lines) and handle 
            'more'. If false (or not present), will
            return entire abstract and handle 'stop'"""
