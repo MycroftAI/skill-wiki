@@ -306,6 +306,9 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
 
     def respond(self, query):
+        """determine if we have a page match or 
+        disambiguate response. if a disambiguate 
+        match perform auto-disambiguation"""
         result = self.get_wiki_result(query)
         if result is not None:
             if isinstance(result, PageMatch):
