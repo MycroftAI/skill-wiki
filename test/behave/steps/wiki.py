@@ -7,11 +7,22 @@ from test.integrationtests.voight_kampff import then_wait
 
 @then('dialog is stopped')
 def dialog_is_stopped(context):
-    time.sleep(3)
+    def check_dialog_tts_stop(message):
+        who = message.data.get('by', '')
+        return (who == 'TTS', '')
+
+    def check_dialog_mycroft_stop(message):
+        return True, ''
+
     context.bus.emit(Message('mycroft.audio.speech.stop',
                              data={},
                              context={}))
-    time.sleep(1)
+    status, debug = then_wait("mycroft.stop.handled", check_dialog_tts_stop, context, 5)
+    if status:
+        return status, debug
+
+    return then_wait("mycroft.stop", check_dialog_mycroft_stop, context, 5)
+
 
 @then('"{skill}" should reply with dialog "{dialog}"')
 def then_dialog(context, skill, dialog):
