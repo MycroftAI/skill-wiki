@@ -90,7 +90,7 @@ class PageMatch:
         return sentence_tokenize(summary)
 
     def _get_intro_length(self):
-        default_intro = '.'.join(self.summary[:2])
+        default_intro = '. '.join(self.summary[:2])
         if len(default_intro) > 250 or '==' in default_intro:
             return 1
         else:
@@ -109,7 +109,7 @@ class PageMatch:
         """
         lines = self.summary.__getitem__(val)
         if lines:
-            return ''.join(lines)
+            return ' '.join(lines)
         else:
             return ''
 
@@ -339,7 +339,7 @@ class WikipediaSkill(CommonQuerySkill):
                 result = result[:20]
             else:
                 result = result[:2]
-        return ''.join(result)
+        return ' '.join(result)
 
     def fix_input(self, query):
         for noun in self.translated_question_words:
