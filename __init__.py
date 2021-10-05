@@ -57,12 +57,10 @@ class PageMatch:
     This class contains the necessary data for the skills responses.
     """
 
-    def __init__(self, result=None, auto_suggest=None,
-                 auto_more=False):
+    def __init__(self, result=None, auto_suggest=None):
 
         self.wiki_result = result
         self.auto_suggest = auto_suggest
-        self.auto_more = auto_more
 
         self.summary = self._wiki_page_summary(result, auto_suggest)
         self.intro_length = self._get_intro_length()
@@ -115,7 +113,7 @@ class PageMatch:
             return ''
 
 
-def wiki_lookup(search, lang_code, auto_suggest=True, auto_more=False):
+def wiki_lookup(search, lang_code, auto_suggest=True):
     """Performs a wikipedia article lookup.
 
     Arguments:
@@ -138,7 +136,7 @@ def wiki_lookup(search, lang_code, auto_suggest=True, auto_more=False):
         if len(results) == 0:
             return None
 
-        return PageMatch(results[0], auto_suggest, auto_more=auto_more)
+        return PageMatch(results[0], auto_suggest)
 
     except wiki.exceptions.DisambiguationError as e:
         # Test: "tell me about john"
@@ -202,8 +200,12 @@ class WikipediaSkill(CommonQuerySkill):
         # Remember context and speak results
         self._match = match
         self.set_context("wiki_article", "")
-        self._lines_spoken_already = match.intro_length
-        self.speak(match.get_intro())
+        if self.auto_more:
+            self._lines_spoken_already = 20
+            self.speak(match[:20])
+        else:
+            self._lines_spoken_already = match.intro_length
+            self.speak(match.get_intro())
 
     def respond_disambiguation(self, disambiguation):
         """Ask for which of the different matches should be used."""
@@ -250,8 +252,8 @@ class WikipediaSkill(CommonQuerySkill):
         lang_code = self.translate_namedvalues("wikipedia_lang")['code']
         search = wiki.random(pages=1)
         self.speak_dialog("searching", {"query": search})
-        self.handle_result(wiki_lookup(
-            search, lang_code, auto_more=self.auto_more))
+        result = wiki_lookup(search, lang_code)
+        self.handle_result(result)
 
     def get_wiki_result(self, search):
         """Search wiki and Handle disambiguation.
@@ -269,7 +271,7 @@ class WikipediaSkill(CommonQuerySkill):
 
         def lookup(auto_suggest):
             try:
-                return wiki_lookup(search, lang_code, auto_suggest, auto_more=self.auto_more)
+                return wiki_lookup(search, lang_code, auto_suggest)
             except wiki.PageError:
                 return None
             except Exception as e:
@@ -322,8 +324,13 @@ class WikipediaSkill(CommonQuerySkill):
                         result = result.summary
                 else:
                     result = None
-
-        return result
+        # Trim response to correct length
+        if result is not None:    
+            if self.auto_more:
+                result = result[:20]
+            else:
+                result = result[:2]
+        return ''.join(result)
 
     def fix_input(self, query):
         for noun in self.translated_question_words:
