@@ -16,6 +16,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 import wikipedia as wiki
+from mycroft.audio import wait_while_speaking
 from mycroft.skills import AdaptIntent, intent_handler
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 from mycroft.skills.skill_data import read_vocab_file
@@ -310,9 +311,11 @@ class WikipediaSkill(CommonQuerySkill):
             match (PageMatch): wiki page match
         """
         self.gui.clear()
+        self.gui['title'] = match.wiki_result
         self.gui['summary'] = match.summary
         self.gui['imgLink'] = match.image
-        self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
+        self.gui.show_image(match.image, title=match.wiki_result)
+        # self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
 
     def respond(self, query):
         """determine if we have a page match or 
