@@ -13,14 +13,14 @@
 # limitations under the License.
 
 import re
-import wikipedia as wiki
 from concurrent.futures import ThreadPoolExecutor
-from adapt.intent import IntentBuilder
+
+import wikipedia as wiki
 from mycroft import intent_handler
-from mycroft.util.format import join_list
+from mycroft.skills import AdaptIntent
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 from mycroft.skills.skill_data import read_vocab_file
-
+from mycroft.util.format import join_list
 from mycroft.util.log import LOG
 
 EXCLUDED_IMAGES = [
@@ -46,6 +46,7 @@ def wiki_image(pagetext):
 
 class PageDisambiguation:
     """Class representing a disambiguation request."""
+
     def __init__(self, options):
         self.options = options[:5]
 
@@ -55,6 +56,7 @@ class PageMatch:
 
     This class contains the necessary data for the skills responses.
     """
+
     def __init__(self, result=None, auto_suggest=None,
                  summary=None, lines=None, image=None,
                  auto_more=False):
@@ -93,18 +95,20 @@ class PageMatch:
                 # We hit the end of the article summary or hit a really long
                 # one.  Reduce to first line.
                 lines = 1
-                summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
+                summary = wiki.summary(
+                    result, lines, auto_suggest=auto_suggest)
         else:
             lines = 20
             summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
 
             if "==" in summary or len(summary) > 2500:
                 lines = 2
-                summary = wiki.summary(result, lines, auto_suggest=auto_suggest)
-
+                summary = wiki.summary(
+                    result, lines, auto_suggest=auto_suggest)
 
         # Clean text to make it more speakable
         return re.sub(r'\([^)]*\)|/[^/]*/', '', summary), lines
+
 
 def wiki_lookup(search, lang_code, auto_suggest=True, auto_more=False):
     """Performs a wikipedia article lookup.
@@ -150,7 +154,7 @@ class WikipediaSkill(CommonQuerySkill):
         temp = read_vocab_file(fname)
         vocab = []
         for item in temp:
-            vocab.append( " ".join(item) )
+            vocab.append(" ".join(item))
         self.sorted_vocab = sorted(vocab, key=lambda x: (-len(x), x))
 
         self.translated_question_words = self.translate_list("question_words")
@@ -159,7 +163,7 @@ class WikipediaSkill(CommonQuerySkill):
 
         self.auto_more = self.config_core.get('cq_auto_more', False)
 
-    @intent_handler(IntentBuilder("").require("Wikipedia").
+    @intent_handler(AdaptIntent("").require("Wikipedia").
                     require("ArticleTitle"))
     def handle_wiki_query(self, message):
         """Extract what the user asked about and reply with info from wikipedia.
@@ -207,7 +211,7 @@ class WikipediaSkill(CommonQuerySkill):
         if choice:
             self.handle_result(self.get_wiki_result(choice))
 
-    @intent_handler(IntentBuilder("").require("More").require("wiki_article"))
+    @intent_handler(AdaptIntent("").require("More").require("wiki_article"))
     def handle_tell_more(self, message):
         """Follow up query handler, "tell me more".
 
@@ -250,7 +254,8 @@ class WikipediaSkill(CommonQuerySkill):
         lang_code = self.translate_namedvalues("wikipedia_lang")['code']
         search = wiki.random(pages=1)
         self.speak_dialog("searching", {"query": search})
-        self.handle_result(wiki_lookup(search, lang_code, auto_more=self.auto_more))
+        self.handle_result(wiki_lookup(
+            search, lang_code, auto_more=self.auto_more))
 
     def get_wiki_result(self, search):
         """Search wiki and Handle disambiguation.
@@ -314,7 +319,7 @@ class WikipediaSkill(CommonQuerySkill):
             if isinstance(result, PageMatch):
                 result = result.summary
             elif isinstance(result, PageDisambiguation):
-                # we auto disambiguate here 
+                # we auto disambiguate here
                 if len(result.options) > 0:
                     result = self.get_wiki_result(result.options[0])
                     if result is not None:
@@ -347,6 +352,6 @@ class WikipediaSkill(CommonQuerySkill):
     def stop(self):
         self.gui.release()
 
+
 def create_skill():
     return WikipediaSkill()
-
