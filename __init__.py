@@ -29,22 +29,6 @@ EXCLUDED_IMAGES = [
 ]
 
 
-def wiki_image(pagetext):
-    """Fetch first best image from results.
-
-    Arguments:
-        pagetext: wikipedia result page
-
-    Returns:
-        (str) image url or empty string if no image available
-    """
-    images = [i for i in pagetext.images if i not in EXCLUDED_IMAGES]
-    if len(images) > 0:
-        return images[0]
-    else:
-        return ''
-
-
 class PageDisambiguation:
     """Class representing a disambiguation request."""
 
@@ -65,7 +49,7 @@ class PageMatch:
 
         self.summary = self._wiki_page_summary(result, auto_suggest)
         self.intro_length = self._get_intro_length()
-        self.wiki_page = wiki.page(result, auto_suggest=auto_suggest)
+        self.page = wiki.page(result, auto_suggest=auto_suggest)
 
     def _wiki_page_summary(self, result: str, auto_suggest: bool) -> list([str]):
         """Request the summary for the result.
@@ -113,9 +97,26 @@ class PageMatch:
         else:
             return ''
 
+    def _find_best_image(self):
+        """Find the best image for this wiki page.
+
+        Preference given to the official thumbnail.
+
+        Returns:
+            (str) image url or empty string if no image available
+        """
+        image = ''
+        if hasattr(self.page, 'thumbnail'):
+            image = self.page.thumbnail
+        else:
+            images = [i for i in self.page.images if i not in EXCLUDED_IMAGES]
+            if len(images) > 0:
+                image = images[0]
+        return image
+
     def get_image(self):
         """Fetch image for this wiki page."""
-        self.image = wiki_image(self.wiki_page)
+        self.image = self._find_best_image()
         return self.image
 
 
@@ -334,7 +335,7 @@ class WikipediaSkill(CommonQuerySkill):
                 else:
                     result = None
         # Trim response to correct length
-        if result is not None:    
+        if result is not None:
             if self.auto_more:
                 result = result[:20]
             else:

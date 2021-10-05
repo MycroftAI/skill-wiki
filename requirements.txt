@@ -1,2 +1,7 @@
-wikipedia==1.4.0
-quebra-frases~=0.3.4
+# This fork of the Wikipedia package contains a fix fetching the correct 
+# thumbnail image. The Wikipedia package is abandonware and has a large
+# number of outstanding PR's. There are a few forks and new projects around.
+# However at present this still serves our purposes. It's highly likely that
+# an alternative will need to be selected for functionality improvements.
+https://github.com/davidedmundson/Wikipedia/tarball/0b6c67d152e1a4a2c28d9793dda674213b0071d8
+quebra-frases~=0.3.7
