@@ -64,7 +64,7 @@ class PageMatch:
 
         self.summary = self._wiki_page_summary(result, auto_suggest)
         self.intro_length = self._get_intro_length()
-        self.image = wiki_image(wiki.page(result, auto_suggest=auto_suggest))
+        self.wiki_page = wiki.page(result, auto_suggest=auto_suggest)
 
     def _wiki_page_summary(self, result: str, auto_suggest: bool) -> list([str]):
         """Request the summary for the result.
@@ -111,6 +111,11 @@ class PageMatch:
             return ''.join(lines)
         else:
             return ''
+
+    def get_image(self):
+        """Fetch image for this wiki page."""
+        self.image = wiki_image(self.wiki_page)
+        return self.image
 
 
 def wiki_lookup(search, lang_code, auto_suggest=True):
@@ -196,6 +201,7 @@ class WikipediaSkill(CommonQuerySkill):
 
     def respond_match(self, match):
         """Read short summary to user."""
+        match.get_image()
         self.display_article(match)
         # Remember context and speak results
         self._match = match
