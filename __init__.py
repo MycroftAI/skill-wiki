@@ -16,8 +16,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 import wikipedia as wiki
-from mycroft import intent_handler
-from mycroft.skills import AdaptIntent
+from mycroft.skills import AdaptIntent, intent_handler
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 from mycroft.skills.skill_data import read_vocab_file
 from mycroft.util.format import join_list
@@ -58,18 +57,16 @@ class PageMatch:
     """
 
     def __init__(self, result=None, auto_suggest=None,
-                 summary=None, lines=None, image=None,
                  auto_more=False):
 
         self.auto_more = auto_more
 
-        if not (summary and lines):
-            summary, lines = self._wiki_page_summary(result, auto_suggest)
+        summary, lines = self._wiki_page_summary(result, auto_suggest)
 
         self.summary = summary
         self.lines = lines
 
-        self.image = image or wiki_image(
+        self.image = wiki_image(
             wiki.page(result, auto_suggest=auto_suggest)
         )
         self.auto_suggest = auto_suggest
