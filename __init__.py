@@ -49,7 +49,7 @@ class WikipediaSkill(CommonQuerySkill):
         self.translated_articles = self.translate_list("articles")
         self.auto_more = self.config_core.get('cq_auto_more', False)
 
-    @intent_handler(AdaptIntent("").require("Wikipedia").
+    @intent_handler(AdaptIntent().require("Wikipedia").
                     require("ArticleTitle"))
     def handle_wiki_query(self, message):
         """Extract what the user asked about and reply with info from wikipedia.
@@ -99,7 +99,7 @@ class WikipediaSkill(CommonQuerySkill):
         if choice:
             self.handle_result(self.get_wiki_result(choice))
 
-    @intent_handler(AdaptIntent("").require("More").require("wiki_article"))
+    @intent_handler(AdaptIntent().require("More").require("wiki_article"))
     def handle_tell_more(self, message):
         """Follow up query handler, "tell me more".
 
