@@ -11,17 +11,11 @@ def dialog_is_stopped(context):
         who = message.data.get('by', '')
         return (who == 'TTS', '')
 
-    def check_dialog_mycroft_stop(message):
-        return True, ''
-
     context.bus.emit(Message('mycroft.audio.speech.stop',
                              data={},
                              context={}))
     status, debug = then_wait("mycroft.stop.handled", check_dialog_tts_stop, context, 5)
-    if status:
-        return status, debug
-
-    return then_wait("mycroft.stop", check_dialog_mycroft_stop, context, 5)
+    return status, debug
 
 
 @then('"{skill}" should reply with dialog "{dialog}"')
