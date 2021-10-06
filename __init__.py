@@ -28,18 +28,25 @@ EXCLUDED_IMAGES = [
 
 class WikipediaSkill(CommonQuerySkill):
     def __init__(self):
-        """ self.auto_more (bool): From config "cq_auto_more": if true will
-           return abbreviated (2 lines) and handle 
-           'more'. If false (or not present), will
-           return entire abstract and handle 'stop'"""
+        """Constructor for WikipediaSkill.
+
+        Attributes:
+            _match (PageMatch): current match in case user requests more info
+            _lines_spoken_already (int): number of lines already spoken from _match.summary
+            translated_question_words (list[str]): used in cleaning queries
+            translated_question_verbs (list[str]): used in cleaning queries
+            translated_articles (list[str]): used in cleaning queries
+            auto_more (bool): default false
+                Set by cq_auto_more attribute in mycroft.conf
+                If true will read 20 lines of abstract for any query.
+                If false will read first 2 lines and wait for request to read more.
+        """
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
         self._match = None
         self._lines_spoken_already = 0
-
         self.translated_question_words = self.translate_list("question_words")
         self.translated_question_verbs = self.translate_list("question_verbs")
         self.translated_articles = self.translate_list("articles")
-
         self.auto_more = self.config_core.get('cq_auto_more', False)
 
     @intent_handler(AdaptIntent("").require("Wikipedia").
