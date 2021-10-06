@@ -59,45 +59,18 @@ class WikipediaSkill(CommonQuerySkill):
         self.speak_dialog("searching", {"query": search})
         self.handle_result(self.get_wiki_result(search))
 
-    def handle_result(self, result):
-        """Handle result depending on result type.
+    @intent_handler("Random.intent")
+    def handle_random_intent(self, _):
+        """ Get a random wiki page.
 
-        Speaks appropriate feedback to user depending of the result type.
-        Arguments:
-            result (object): wiki result object to handle.
+        Uses the Special:Random page of wikipedia
         """
-        if result is None:
-            self.respond_no_match()
-        elif isinstance(result, PageMatch):
-            self.respond_match(result)
-        elif isinstance(result, PageDisambiguation):
-            self.respond_disambiguation(result)
-
-    def respond_no_match(self):
-        """Answer no match found."""
-        self.speak_dialog("no entry found")
-
-    def respond_match(self, match):
-        """Read short summary to user."""
-        self.display_article(match)
-        # Remember context and speak results
-        self._match = match
-        self.set_context("wiki_article", "")
-        if self.auto_more:
-            self._lines_spoken_already = 20
-            self.speak(match[:20])
-        else:
-            self._lines_spoken_already = match.intro_length
-            self.speak(match.get_intro())
-
-    def respond_disambiguation(self, disambiguation):
-        """Ask for which of the different matches should be used."""
-        options = join_list(disambiguation.options, 'or', lang=self.lang)
-        choice = self.get_response('disambiguate', data={"options": options})
-
-        self.log.info('Disambiguation choice is {}'.format(choice))
-        if choice:
-            self.handle_result(self.get_wiki_result(choice))
+        # Talk to the user, as this can take a little time...
+        lang_code = self.translate_namedvalues("wikipedia_lang")['code']
+        search = get_random_wiki_page()
+        self.speak_dialog("searching", {"query": search})
+        result = wiki_lookup(search, lang_code)
+        self.handle_result(result)
 
     @intent_handler(AdaptIntent().require("More").require("wiki_article"))
     def handle_tell_more(self, message):
@@ -125,18 +98,63 @@ class WikipediaSkill(CommonQuerySkill):
         else:
             self.speak_dialog("thats all")
 
-    @intent_handler("Random.intent")
-    def handle_random_intent(self, _):
-        """ Get a random wiki page.
+    def CQS_match_query_phrase(self, query: str) -> tuple([str, CQSMatchLevel, str, dict]):
+        """Respond to Common Query framework with best possible answer.
 
-        Uses the Special:Random page of wikipedia
+        Args:
+            query: question to answer
+
+        Returns:
+            Tuple(
+                question being answered,
+                CQS Match Level confidence,
+                answer to question,
+                callback dict available to CQS_action method
+            )
         """
-        # Talk to the user, as this can take a little time...
-        lang_code = self.translate_namedvalues("wikipedia_lang")['code']
-        search = get_random_wiki_page()
-        self.speak_dialog("searching", {"query": search})
-        result = wiki_lookup(search, lang_code)
-        self.handle_result(result)
+        answer = None
+        callback_data = dict()
+        cleaned_query = self.extract_topic(query)
+
+        if cleaned_query is not None:
+            answer, result = self._get_answer_for_query(cleaned_query)
+
+        if result:
+            callback_data = {
+                'title': result.wiki_result,
+                'summary': result.summary,
+                'image': result.image
+            }
+        if answer:
+            return (query, CQSMatchLevel.CATEGORY, answer, callback_data)
+        return answer
+
+    def CQS_action(self, phrase: str, data: dict):
+        """Display result if selected by Common Query to answer.
+
+        Note common query will speak the response.
+
+        Args:
+            phrase: User utterance of original question
+            data: Callback data specified in CQS_match_query_phrase()
+        """
+        self._display_article_from_dict(data)
+
+    def extract_topic(self, query: str) -> str:
+        """Extract the topic of a query.
+
+        Args:
+            query: user utterance eg 'what is the earth'
+        Returns:
+            topic of question eg 'earth' or original query
+        """
+        for noun in self.translated_question_words:
+            for verb in self.translated_question_verbs:
+                for article in [i + ' ' for i in self.translated_articles] + ['']:
+                    test = noun + verb + ' ' + article
+                    if query[:len(test)] == test:
+                        return query[len(test):]
+        return query
 
     def get_wiki_result(self, search):
         """Search wiki and Handle disambiguation.
@@ -180,6 +198,78 @@ class WikipediaSkill(CommonQuerySkill):
             ret = res_auto_suggest
         return ret
 
+    def _get_answer_for_query(self, query: str) -> str:
+        """Get the best guess answer for a given query.
+
+        First determine if we have a page match or disambiguate response.
+        If a disambiguate match perform auto-disambiguation.
+
+        Args:
+            query: question from user
+        Returns
+            answer to question, page result
+        """
+        answer, summary = '', ''
+        result = self.get_wiki_result(query)
+        if result is not None:
+            if isinstance(result, PageMatch):
+                summary = result.summary
+            elif isinstance(result, PageDisambiguation):
+                # we auto disambiguate here
+                if len(result.options) > 0:
+                    result = self.get_wiki_result(result.options[0])
+                    if result is not None:
+                        summary = result.summary
+                else:
+                    result = None
+        # Trim response to correct length
+        if result and summary:
+            if self.auto_more:
+                answer = summary[:20]
+            else:
+                answer = summary[:2]
+        return ' '.join(answer), result
+
+    def handle_result(self, result):
+        """Handle result depending on result type.
+
+        Speaks appropriate feedback to user depending of the result type.
+        Arguments:
+            result (object): wiki result object to handle.
+        """
+        if result is None:
+            self.respond_no_match()
+        elif isinstance(result, PageMatch):
+            self.respond_match(result)
+        elif isinstance(result, PageDisambiguation):
+            self.respond_disambiguation(result)
+
+    def respond_no_match(self):
+        """Answer no match found."""
+        self.speak_dialog("no entry found")
+
+    def respond_match(self, match):
+        """Read short summary to user."""
+        self.display_article(match)
+        # Remember context and speak results
+        self._match = match
+        self.set_context("wiki_article", "")
+        if self.auto_more:
+            self._lines_spoken_already = 20
+            self.speak(match[:20])
+        else:
+            self._lines_spoken_already = match.intro_length
+            self.speak(match.get_intro())
+
+    def respond_disambiguation(self, disambiguation):
+        """Ask for which of the different matches should be used."""
+        options = join_list(disambiguation.options, 'or', lang=self.lang)
+        choice = self.get_response('disambiguate', data={"options": options})
+
+        self.log.info('Disambiguation choice is {}'.format(choice))
+        if choice:
+            self.handle_result(self.get_wiki_result(choice))
+
     def display_article(self, match):
         """Display the match page on a GUI if connected.
 
@@ -214,89 +304,6 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui.show_image(data.get('image', ''),
                             title=data.get('title', 'From Wikipedia'))
         # self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
-
-    def _get_answer_for_query(self, query: str) -> str:
-        """Get the best guess answer for a given query.
-
-        First determine if we have a page match or disambiguate response.
-        If a disambiguate match perform auto-disambiguation.
-
-        Args:
-            query: question from user
-        Returns
-            answer to question, page result
-        """
-        answer, summary = '', ''
-        result = self.get_wiki_result(query)
-        if result is not None:
-            if isinstance(result, PageMatch):
-                summary = result.summary
-            elif isinstance(result, PageDisambiguation):
-                # we auto disambiguate here
-                if len(result.options) > 0:
-                    result = self.get_wiki_result(result.options[0])
-                    if result is not None:
-                        summary = result.summary
-                else:
-                    result = None
-        # Trim response to correct length
-        if result and summary:
-            if self.auto_more:
-                answer = summary[:20]
-            else:
-                answer = summary[:2]
-        return ' '.join(answer), result
-
-    def fix_input(self, query):
-        for noun in self.translated_question_words:
-            for verb in self.translated_question_verbs:
-                for article in [i + ' ' for i in self.translated_articles] + ['']:
-                    test = noun + verb + ' ' + article
-                    if query[:len(test)] == test:
-                        return query[len(test):]
-        return query
-
-    def CQS_match_query_phrase(self, query: str) -> tuple([str, CQSMatchLevel, str, dict]):
-        """Respond to Common Query framework with best possible answer.
-
-        Args:
-            query: question to answer
-
-        Returns:
-            Tuple(
-                question being answered,
-                CQS Match Level confidence,
-                answer to question,
-                callback dict available to CQS_action method
-            )
-        """
-        answer = None
-        callback_data = dict()
-        cleaned_query = self.fix_input(query)
-
-        if cleaned_query is not None:
-            answer, result = self._get_answer_for_query(cleaned_query)
-
-        if result:
-            callback_data = {
-                'title': result.wiki_result,
-                'summary': result.summary,
-                'image': result.image
-            }
-        if answer:
-            return (query, CQSMatchLevel.CATEGORY, answer, callback_data)
-        return answer
-
-    def CQS_action(self, phrase: str, data: dict):
-        """Display result if selected by Common Query to answer.
-
-        Note common query will speak the response.
-
-        Args:
-            phrase: User utterance of original question
-            data: Callback data specified in CQS_match_query_phrase()
-        """
-        self._display_article_from_dict(data)
 
     def stop(self):
         self.gui.release()
