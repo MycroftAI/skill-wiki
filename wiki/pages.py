@@ -19,6 +19,10 @@ from quebra_frases import sentence_tokenize
 import wikipedia
 from wikipedia import PageError
 
+EXCLUDED_IMAGES = [
+    'https://upload.wikimedia.org/wikipedia/commons/7/73/Blue_pencil.svg'
+]
+
 
 class PageDisambiguation:
     """Class representing a disambiguation request."""

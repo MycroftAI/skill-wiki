@@ -21,10 +21,6 @@ from mycroft.util.format import join_list
 from .wiki.pages import PageMatch, PageDisambiguation, PageError
 from .wiki.search import get_random_wiki_page, wiki_lookup
 
-EXCLUDED_IMAGES = [
-    'https://upload.wikimedia.org/wikipedia/commons/7/73/Blue_pencil.svg'
-]
-
 
 class WikipediaSkill(CommonQuerySkill):
     def __init__(self):
