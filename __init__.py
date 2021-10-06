@@ -47,26 +47,25 @@ class PageMatch:
         self.wiki_result = result
         self.auto_suggest = auto_suggest
 
-        self.summary = self._wiki_page_summary(result, auto_suggest)
-        self.intro_length = self._get_intro_length()
         self.page = wiki.page(result, auto_suggest=auto_suggest)
+        self.summary = self._get_page_summary()
+        self.intro_length = self._get_intro_length()
 
-    def _wiki_page_summary(self, result: str, auto_suggest: bool) -> list([str]):
-        """Request the summary for the result.
+    def _get_page_summary(self) -> list([str]):
+        """Get the summary from the wiki page.
 
-        writes in inverted-pyramid style, so the first sentence is the
-        most important, the second less important, etc.  Two sentences
+        Writes in inverted-pyramid style, so the first sentence is the
+        most important, the second less important, etc. Two sentences
         is all we ever need.
-
-        Arguments:
-            wiki result (str): Wikipedia match name
-            auto_suggest (bool): True if auto suggest was used to get this
-                                 result.
 
         Returns
             List: summary as list of sentences
         """
-        summary = wiki.summary(result, auto_suggest=auto_suggest)
+        if hasattr(self.page, 'summary'):
+            summary = self.page.summary
+        else:
+            summary = wiki.summary(
+                self.wiki_result, auto_suggest=self.auto_suggest)
 
         # Clean text to make it more speakable
         summary = re.sub(r'\([^)]*\)|/[^/]*/', '', summary)
