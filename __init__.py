@@ -16,7 +16,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 from mycroft.skills import AdaptIntent, intent_handler
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
-from mycroft.skills.skill_data import read_vocab_file
 from mycroft.util.format import join_list
 
 from .wiki.pages import PageMatch, PageDisambiguation, PageError
@@ -36,13 +35,6 @@ class WikipediaSkill(CommonQuerySkill):
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
         self._match = None
         self._lines_spoken_already = 0
-
-        fname = self.find_resource("Wikipedia.voc", res_dirname="vocab")
-        temp = read_vocab_file(fname)
-        vocab = []
-        for item in temp:
-            vocab.append(" ".join(item))
-        self.sorted_vocab = sorted(vocab, key=lambda x: (-len(x), x))
 
         self.translated_question_words = self.translate_list("question_words")
         self.translated_question_verbs = self.translate_list("question_verbs")
