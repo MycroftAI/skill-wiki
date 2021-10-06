@@ -112,7 +112,7 @@ class WikipediaSkill(CommonQuerySkill):
         cleaned_query = self.extract_topic(query)
 
         if cleaned_query is not None:
-            answer, result = self._get_answer_for_query(cleaned_query)
+            answer, result = self._get_best_guess_answer(cleaned_query)
 
         if result:
             callback_data = {
@@ -175,25 +175,21 @@ class WikipediaSkill(CommonQuerySkill):
                 return None
 
         with ThreadPoolExecutor() as pool:
-            """rather than gut it I simply disable 
-            it for now but once fixed change this to 
-            (True, False). This fixes the Jira bug
-            wiki returns cat for what is an automobile"""
             res_auto_suggest, res_without_auto_suggest = (
-                list(pool.map(lookup, (False, False)))
+                list(pool.map(lookup, (True, False)))
             )
-        # Check the results, return PageMatch (autosuggest
-        # preferred) otherwise return the autosuggest
+        # Check the results, return PageMatch (without auto_suggest preferred)
+        # otherwise return the auto_suggest that may be a PageMatch or
         # PageDisambiguation.
-        if ((isinstance(res_auto_suggest, PageDisambiguation) or
-             (res_auto_suggest is None)) and
-                isinstance(res_without_auto_suggest, PageMatch)):
+        # Previously preferenced with auto_suggest however it is returning
+        # incorrect results eg "tell me about automobiles" returns cats.
+        if isinstance(res_without_auto_suggest, PageMatch):
             ret = res_without_auto_suggest
         else:
             ret = res_auto_suggest
         return ret
 
-    def _get_answer_for_query(self, query: str) -> str:
+    def _get_best_guess_answer(self, query: str) -> str:
         """Get the best guess answer for a given query.
 
         First determine if we have a page match or disambiguate response.
