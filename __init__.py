@@ -16,7 +16,6 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 
 import wikipedia as wiki
-from mycroft.audio import wait_while_speaking
 from mycroft.skills import AdaptIntent, intent_handler
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 from mycroft.skills.skill_data import read_vocab_file
@@ -113,10 +112,10 @@ class PageMatch:
                 image = images[0]
         return image
 
-    def get_image(self):
-        """Fetch image for this wiki page."""
-        self.image = self._find_best_image()
-        return self.image
+    @property
+    def image(self):
+        """Image for this wiki page."""
+        return self._find_best_image()
 
 
 def wiki_lookup(search, lang_code, auto_suggest=True):
@@ -202,7 +201,6 @@ class WikipediaSkill(CommonQuerySkill):
 
     def respond_match(self, match):
         """Read short summary to user."""
-        match.get_image()
         self.display_article(match)
         # Remember context and speak results
         self._match = match
@@ -402,7 +400,6 @@ class WikipediaSkill(CommonQuerySkill):
             answer, result = self._get_answer_for_query(cleaned_query)
 
         if result:
-            result.get_image()
             callback_data = {
                 'title': result.wiki_result,
                 'summary': result.summary,
