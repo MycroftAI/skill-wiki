@@ -36,10 +36,6 @@ class WikipediaSkill(CommonQuerySkill):
             translated_question_words (list[str]): used in cleaning queries
             translated_question_verbs (list[str]): used in cleaning queries
             translated_articles (list[str]): used in cleaning queries
-            auto_more (bool): default false
-                Set by cq_auto_more attribute in mycroft.conf
-                If true will read 20 lines of abstract for any query.
-                If false will read first 2 lines and wait for request to read more.
         """
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
         self._match = None
@@ -47,7 +43,6 @@ class WikipediaSkill(CommonQuerySkill):
         self.translated_question_words = self.translate_list("question_words")
         self.translated_question_verbs = self.translate_list("question_verbs")
         self.translated_articles = self.translate_list("articles")
-        self.auto_more = self.config_core.get('cq_auto_more', False)
 
     @intent_handler(AdaptIntent().require("Wikipedia").
                     require("ArticleTitle"))
@@ -209,26 +204,40 @@ class WikipediaSkill(CommonQuerySkill):
         Returns
             answer to question, page result
         """
-        answer, summary = '', ''
+        answer = ''
         result = self.get_wiki_result(query)
-        if result is not None:
-            if isinstance(result, PageMatch):
-                summary = result.summary
-            elif isinstance(result, PageDisambiguation):
-                # we auto disambiguate here
-                if len(result.options) > 0:
-                    result = self.get_wiki_result(result.options[0])
-                    if result is not None:
-                        summary = result.summary
-                else:
-                    result = None
-        # Trim response to correct length
-        if result and summary:
-            if self.auto_more:
-                answer = summary[:20]
+        if isinstance(result, PageDisambiguation):
+            # we auto disambiguate here
+            if len(result.options) > 0:
+                result = self.get_wiki_result(result.options[0])
             else:
-                answer = summary[:2]
-        return ' '.join(answer), result
+                result = None
+        if result is not None:
+            answer, _ = self.get_answer_from_result(result)
+        return answer, result
+
+    def get_answer_from_result(self, result: PageMatch) -> tuple([str, int]):
+        """Get an answer of the correct length from the start of the summary.
+
+        About auto_more (bool): default False
+            Set by cq_auto_more attribute in mycroft.conf
+            If true will read 20 lines of abstract for any query.
+            If false will read first 2 lines and wait for request to read more.
+
+        Args:
+            result: PageMatch of successful query
+        Returns:
+            trimmed answer, number of sentences
+        """
+        auto_more = self.config_core.get('cq_auto_more', False)
+
+        if auto_more:
+            length = 20
+            answer = ' '.join(result.summary[:length])
+        else:
+            length = result.intro_length
+            answer = result.get_intro()
+        return answer, length
 
     def handle_result(self, result):
         """Handle result depending on result type.
@@ -254,12 +263,9 @@ class WikipediaSkill(CommonQuerySkill):
         # Remember context and speak results
         self._match = match
         self.set_context("wiki_article", "")
-        if self.auto_more:
-            self._lines_spoken_already = 20
-            self.speak(match[:20])
-        else:
-            self._lines_spoken_already = match.intro_length
-            self.speak(match.get_intro())
+        answer, answer_length = self.get_answer_from_result(match)
+        self._lines_spoken_already = answer_length
+        self.speak(answer)
 
     def respond_disambiguation(self, disambiguation):
         """Ask for which of the different matches should be used."""
