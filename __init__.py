@@ -317,29 +317,59 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui.show_image(match.image, title=match.wiki_result)
         # self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
 
-    def respond(self, query):
-        """determine if we have a page match or 
-        disambiguate response. if a disambiguate 
-        match perform auto-disambiguation"""
+    def _display_article_from_dict(self, data: dict):
+        """Display the page data on a GUI if connected.
+
+        Used by CQS as the data is serialized.
+
+        Arguments:
+            data: wiki page data {
+                title: page title
+                summary: summary of page contents
+                image: url of image to display
+            }
+        """
+        if not self.gui.connected:
+            return
+        self.gui.clear()
+        self.gui['title'] = data.get('title', 'From Wikipedia')
+        self.gui['summary'] = data.get('summary', '')
+        self.gui['imgLink'] = data.get('image', '')
+        self.gui.show_image(data.get('image', ''),
+                            title=data.get('title', 'From Wikipedia'))
+        # self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
+
+    def _get_answer_for_query(self, query: str) -> str:
+        """Get the best guess answer for a given query.
+
+        First determine if we have a page match or disambiguate response.
+        If a disambiguate match perform auto-disambiguation.
+
+        Args:
+            query: question from user
+        Returns
+            answer to question, page result
+        """
+        answer, summary = '', ''
         result = self.get_wiki_result(query)
         if result is not None:
             if isinstance(result, PageMatch):
-                result = result.summary
+                summary = result.summary
             elif isinstance(result, PageDisambiguation):
                 # we auto disambiguate here
                 if len(result.options) > 0:
                     result = self.get_wiki_result(result.options[0])
                     if result is not None:
-                        result = result.summary
+                        summary = result.summary
                 else:
                     result = None
         # Trim response to correct length
-        if result is not None:
+        if result and summary:
             if self.auto_more:
-                result = result[:20]
+                answer = summary[:20]
             else:
-                result = result[:2]
-        return ' '.join(result)
+                answer = summary[:2]
+        return ' '.join(answer), result
 
     def fix_input(self, query):
         for noun in self.translated_question_words:
@@ -350,16 +380,48 @@ class WikipediaSkill(CommonQuerySkill):
                         return query[len(test):]
         return query
 
-    def CQS_match_query_phrase(self, query):
+    def CQS_match_query_phrase(self, query: str) -> tuple([str, CQSMatchLevel, str, dict]):
+        """Respond to Common Query framework with best possible answer.
+
+        Args:
+            query: question to answer
+
+        Returns:
+            Tuple(
+                question being answered,
+                CQS Match Level confidence,
+                answer to question,
+                callback dict available to CQS_action method
+            )
+        """
         answer = None
-        test = self.fix_input(query)
+        callback_data = dict()
+        cleaned_query = self.fix_input(query)
 
-        if test is not None:
-            answer = self.respond(test)
+        if cleaned_query is not None:
+            answer, result = self._get_answer_for_query(cleaned_query)
 
+        if result:
+            result.get_image()
+            callback_data = {
+                'title': result.wiki_result,
+                'summary': result.summary,
+                'image': result.image
+            }
         if answer:
-            return (query, CQSMatchLevel.CATEGORY, answer)
+            return (query, CQSMatchLevel.CATEGORY, answer, callback_data)
         return answer
+
+    def CQS_action(self, phrase: str, data: dict):
+        """Display result if selected by Common Query to answer.
+
+        Note common query will speak the response.
+
+        Args:
+            phrase: User utterance of original question
+            data: Callback data specified in CQS_match_query_phrase()
+        """
+        self._display_article_from_dict(data)
 
     def stop(self):
         self.gui.release()
