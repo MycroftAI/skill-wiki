@@ -12,140 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 from concurrent.futures import ThreadPoolExecutor
 
-import wikipedia as wiki
 from mycroft.skills import AdaptIntent, intent_handler
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 from mycroft.skills.skill_data import read_vocab_file
 from mycroft.util.format import join_list
-from mycroft.util.log import LOG
-from quebra_frases import sentence_tokenize
+
+from .wiki.pages import PageMatch, PageDisambiguation, PageError
+from .wiki.search import get_random_wiki_page, wiki_lookup
 
 EXCLUDED_IMAGES = [
     'https://upload.wikimedia.org/wikipedia/commons/7/73/Blue_pencil.svg'
 ]
-
-
-class PageDisambiguation:
-    """Class representing a disambiguation request."""
-
-    def __init__(self, options):
-        self.options = options[:5]
-
-
-class PageMatch:
-    """Representation of a wiki page match.
-
-    This class contains the necessary data for the skills responses.
-    """
-
-    def __init__(self, result=None, auto_suggest=None):
-
-        self.wiki_result = result
-        self.auto_suggest = auto_suggest
-
-        self.page = wiki.page(result, auto_suggest=auto_suggest)
-        self.summary = self._get_page_summary()
-        self.intro_length = self._get_intro_length()
-
-    def _get_page_summary(self) -> list([str]):
-        """Get the summary from the wiki page.
-
-        Writes in inverted-pyramid style, so the first sentence is the
-        most important, the second less important, etc. Two sentences
-        is all we ever need.
-
-        Returns
-            List: summary as list of sentences
-        """
-        if hasattr(self.page, 'summary'):
-            summary = self.page.summary
-        else:
-            summary = wiki.summary(
-                self.wiki_result, auto_suggest=self.auto_suggest)
-
-        # Clean text to make it more speakable
-        summary = re.sub(r'\([^)]*\)|/[^/]*/', '', summary)
-        summary = re.sub(r'\s+', ' ', summary)
-        return sentence_tokenize(summary)
-
-    def _get_intro_length(self):
-        default_intro = '. '.join(self.summary[:2])
-        if len(default_intro) > 250 or '==' in default_intro:
-            return 1
-        else:
-            return 2
-
-    def get_intro(self):
-        """Get the intro sentences for the match."""
-        return self[:self.intro_length]
-
-    def __getitem__(self, val):
-        """Implements slicing for the class, returning a chunk of text.
-
-        Can either return a single sentence from the article or a range
-        of sentences. The sentences are prepared and formated into a single
-        string.
-        """
-        lines = self.summary.__getitem__(val)
-        if lines:
-            return ' '.join(lines)
-        else:
-            return ''
-
-    def _find_best_image(self):
-        """Find the best image for this wiki page.
-
-        Preference given to the official thumbnail.
-
-        Returns:
-            (str) image url or empty string if no image available
-        """
-        image = ''
-        if hasattr(self.page, 'thumbnail'):
-            image = self.page.thumbnail
-        else:
-            images = [i for i in self.page.images if i not in EXCLUDED_IMAGES]
-            if len(images) > 0:
-                image = images[0]
-        return image
-
-    @property
-    def image(self):
-        """Image for this wiki page."""
-        return self._find_best_image()
-
-
-def wiki_lookup(search, lang_code, auto_suggest=True):
-    """Performs a wikipedia article lookup.
-
-    Arguments:
-        search (str): phrase to search for
-        lang_code (str): wikipedia language code to use
-        auto_suggest (bool): wether or not to use autosuggest.
-
-    Returns:
-        PageMatch, PageDisambiguation or None
-    """
-    try:
-        # Use the version of Wikipedia appropriate to the request language
-        wiki.set_lang(lang_code)
-
-        # Fetch wiki article titles. This comes back
-        # as a list.  I.e. "beans" returns ['beans',
-        #     'Beans, Beans the Music Fruit', 'Phaseolus vulgaris',
-        #     'Baked beans', 'Navy beans']
-        results = wiki.search(search, 5)
-        if len(results) == 0:
-            return None
-
-        return PageMatch(results[0], auto_suggest)
-
-    except wiki.exceptions.DisambiguationError as e:
-        # Test: "tell me about john"
-        return PageDisambiguation(e.options)
 
 
 class WikipediaSkill(CommonQuerySkill):
@@ -255,7 +134,7 @@ class WikipediaSkill(CommonQuerySkill):
         """
         # Talk to the user, as this can take a little time...
         lang_code = self.translate_namedvalues("wikipedia_lang")['code']
-        search = wiki.random(pages=1)
+        search = get_random_wiki_page()
         self.speak_dialog("searching", {"query": search})
         result = wiki_lookup(search, lang_code)
         self.handle_result(result)
@@ -277,7 +156,7 @@ class WikipediaSkill(CommonQuerySkill):
         def lookup(auto_suggest):
             try:
                 return wiki_lookup(search, lang_code, auto_suggest)
-            except wiki.PageError:
+            except PageError:
                 return None
             except Exception as e:
                 self.log.error("Error: {0}".format(e))
