@@ -89,7 +89,7 @@ class Wiki():
             page = None
         return page
 
-    def get_random_page(self, lang: str = 'en'):
+    def get_random_page(self, lang: str = 'en') -> MediaWikiPage:
         """Get a random wikipedia page.
 
         Uses the Special:Random page of Wikipedia
@@ -98,7 +98,7 @@ class Wiki():
         random_page = self.wiki.random(pages=1)
         return self.get_page(random_page)
 
-    def search(self, query: str, lang: str = 'en'):
+    def search(self, query: str, lang: str = 'en') -> list([str]):
         """Search wikipedia for the given query.
 
         Args:
