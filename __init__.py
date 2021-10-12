@@ -302,6 +302,8 @@ class WikipediaSkill(CommonQuerySkill):
     def report_match(self, page: MediaWikiPage):
         """Read short summary to user."""
         summary, num_lines = self.wiki.get_summary_intro(page)
+        self.speak(summary)
+        self.gui.show_image('', title=page.title)
         image = self.wiki.get_best_image_url(page)
         article = Article(page.title, page, summary, num_lines, image)
         self.display_article(article)
@@ -309,7 +311,6 @@ class WikipediaSkill(CommonQuerySkill):
         self._match = article
         # TODO improve context handling
         self.set_context("wiki_article", "")
-        self.speak(summary)
 
     def display_article(self, article: Article):
         """Display the match page on a GUI if connected.
