@@ -58,7 +58,8 @@ class WikipediaSkill(CommonQuerySkill):
         try:
             wikipedia_lang_code = self.translate_namedvalues("wikipedia_lang")[
                 'code']
-            self.wiki = Wiki(wikipedia_lang_code)
+            auto_more = self.config_core.get('cq_auto_more', False)
+            self.wiki = Wiki(wikipedia_lang_code, auto_more)
         except HTTPError:
             if self._num_wiki_connection_attempts < 1:
                 self.log.warning(
@@ -125,7 +126,7 @@ class WikipediaSkill(CommonQuerySkill):
             self.log.error('handle_tell_more called without previous match')
             return
 
-        summary_to_read, new_lines_spoken = self.get_summary_next_lines(
+        summary_to_read, new_lines_spoken = self.wiki.get_summary_next_lines(
             self._match.page, self._match.num_lines_spoken)
 
         if summary_to_read:
@@ -169,7 +170,7 @@ class WikipediaSkill(CommonQuerySkill):
 
         if page:
             callback_data = {'title': page.title}
-            answer, num_lines = self.get_summary_intro(page)
+            answer, num_lines = self.wiki.get_summary_intro(page)
             self._cqs_match = Article(page.title, page, answer, num_lines)
         if answer:
             self.schedule_event(self.get_cqs_match_image, 0)
@@ -196,7 +197,7 @@ class WikipediaSkill(CommonQuerySkill):
             self.log.warning("CQS match data was not saved. "
                              "Please report this to Mycroft.")
             page = self.wiki.get_page(title)
-            summary, num_lines = self.get_summary_intro(page)
+            summary, num_lines = self.wiki.get_summary_intro(page)
 
         if image is None:
             image = self.wiki.get_best_image_url(page)
@@ -236,7 +237,7 @@ class WikipediaSkill(CommonQuerySkill):
         results = self.wiki.search(query, lang=lang)
         try:
             wiki_page = self.wiki.get_page(results[0])
-            disambiguation = self.get_disambiguation_page(results)
+            disambiguation = self.wiki.get_disambiguation_page(results)
         except DisambiguationError:
             # Some disambiguation pages aren't explicitly labelled.
             # The only guaranteed way to know is to fetch the page.
@@ -257,63 +258,6 @@ class WikipediaSkill(CommonQuerySkill):
         page = self._cqs_match.page
         image = self.wiki.get_best_image_url(page)
         self._cqs_match = self._cqs_match._replace(image=image)
-
-    @staticmethod
-    def get_disambiguation_page(results: list([str])) -> str:
-        """Get the disambiguation page title from a set of results.
-
-        Note that some disambiguation pages aren't explicitly labelled as one.
-        The only guaranteed way to know is to fetch the page and catch a
-        DisambiguationError eg "George Church"
-
-        Args:
-            results: list of wikipedia pages
-        Returns:
-            disambiguation page title or None
-        """
-        try:
-            page_title = next(
-                page for page in results if "(disambiguation)" in page)
-        except StopIteration:
-            page_title = None
-        return page_title
-
-    def get_summary_intro(self, page: MediaWikiPage) -> tuple([str, int]):
-        """Get a short summary of the page.
-
-        About auto_more (bool): default False
-            Set by cq_auto_more attribute in mycroft.conf
-            If true will read 20 sentences of abstract for any query.
-            If false will read first 2 sentences and wait for request to read more.
-
-        Args:
-            page: wiki page containing a summary
-        Returns:
-            trimmed answer, number of sentences
-        """
-        auto_more = self.config_core.get('cq_auto_more', False)
-        length = 20 if auto_more else 2
-        answer = page.summarize(sentences=length)
-        if not auto_more and len(answer) > 250:
-            answer = page.summarize(sentences=1)
-        return answer, length
-
-    def get_summary_next_lines(self, page: MediaWikiPage, previous_lines: int, num_lines: int = 5) -> tuple([str, int]):
-        """Get the next summary lines to be read.
-
-        Args:
-            page: wiki page containing a summary
-            previous_lines: number of sentences already read
-            num_lines: number of new lines to return
-        Returns:
-            next lines of summary,
-            total length of summary read so far ie previous_lines + num_lines
-        """
-        total_summary_read = previous_lines + num_lines
-        previously_read = page.summarize(sentences=previous_lines)
-        next_summary_section = page.summarize(
-            sentences=total_summary_read).replace(previously_read, '')
-        return next_summary_section, total_summary_read
 
     def handle_disambiguation(self, disambiguation_title: str) -> MediaWikiPage:
         """Ask user which of the different matches should be used.
@@ -357,7 +301,7 @@ class WikipediaSkill(CommonQuerySkill):
 
     def report_match(self, page: MediaWikiPage):
         """Read short summary to user."""
-        summary, num_lines = self.get_summary_intro(page)
+        summary, num_lines = self.wiki.get_summary_intro(page)
         image = self.wiki.get_best_image_url(page)
         article = Article(page.title, page, summary, num_lines, image)
         self.display_article(article)
