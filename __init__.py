@@ -234,8 +234,6 @@ class WikipediaSkill(CommonQuerySkill):
         self.log.info(f"Searching wikipedia for {query}")
         lang = self.translate_namedvalues("wikipedia_lang")['code']
         results = self.wiki.search(query, lang=lang)
-        for result in results:
-            self.log.error(result)
         try:
             wiki_page = self.wiki.get_page(results[0])
             disambiguation = self.get_disambiguation_page(results)
