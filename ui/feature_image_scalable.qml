@@ -6,7 +6,6 @@ import Mycroft 1.0 as Mycroft
 
 Mycroft.CardDelegate {
     id: root
-    height: parent.height
     cardBackgroundOverlayColor: "black"
 
     Title {
@@ -24,6 +23,8 @@ Mycroft.CardDelegate {
         anchors.top: articleTitle.bottom
         anchors.topMargin: gridUnit * 2
         anchors.bottomMargin: gridUnit
+        height: parent.height - gridUnit * 6
+        width: parent.width
         fillMode: Image.PreserveAspectFit
         source: sessionData.imgLink
     }

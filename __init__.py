@@ -326,7 +326,8 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui['title'] = article.title or ''
         self.gui['summary'] = article.summary or ''
         self.gui['imgLink'] = article.image or ''
-        self._show_page("feature_image", override_idle=60)
+        self.log.info(self.gui['summary'])
+        self._show_pages(['feature_image', 'summary'], override_idle=60)
 
     def update_display_data(self, article: Article):
         """Update the GUI display data when a page is already being shown.
@@ -338,12 +339,12 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui['summary'] = article.summary or ''
         self.gui['imgLink'] = article.image or ''
 
-    def _show_page(self, page_name_prefix: str, override_idle: bool = None):
+    def _show_pages(self, page_names: list([str]), override_idle: bool = None):
         """Display the correct page depending on the platform.
 
         Args:
-            page_name_prefix: the first part of the QML file name is the same
-                              regardless of platform.
+            page_names: the base part of the QML file name is the same
+                        regardless of platform.
             override_idle: whether or not the screen to show should override
                            the resting screen.
         """
@@ -351,12 +352,14 @@ class WikipediaSkill(CommonQuerySkill):
             page_name_suffix = "_mark_ii"
         else:
             page_name_suffix = "_scalable"
-        page_name = page_name_prefix + page_name_suffix + ".qml"
+        platform_page_names = [f'{page_name}{page_name_suffix}.qml' for page_name in page_names]
+        # page_name = page_name_prefix + page_name_suffix + ".qml"
+        self.log.info(platform_page_names)
 
         if override_idle is not None:
-            self.gui.show_page(page_name, override_idle)
+            self.gui.show_pages(platform_page_names, override_idle=override_idle)
         else:
-            self.gui.show_page(page_name)
+            self.gui.show_pages(platform_page_names)
 
     def stop(self):
         self.gui.release()
