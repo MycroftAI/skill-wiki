@@ -17,15 +17,28 @@ Mycroft.CardDelegate {
             text: sessionData.title
         }
 
-    Image {
-        id: featureImage
-        anchors.horizontalCenter: parent.horizontalCenter
+    Rectangle {
+        id: featureImageContainer
+        color: "black"
+        radius: 16
+        height: parent.height - gridUnit * 6
+        width: parent.width
         anchors.top: articleTitle.bottom
         anchors.topMargin: gridUnit * 2
         anchors.bottomMargin: gridUnit
-        height: parent.height - gridUnit * 6
-        width: parent.width
-        fillMode: Image.PreserveAspectFit
-        source: sessionData.imgLink
+
+        Image {
+            id: featureImage
+            anchors.horizontalCenter: parent.horizontalCenter
+            height: parent.height
+            width: parent.width
+            fillMode: Image.PreserveAspectFit
+            source: sessionData.imgLink
+        }
+        Mycroft.BusyIndicator {
+            anchors.centerIn: parent
+            visible: sessionData.imgLink == ''
+            running: True
+        }
     }
 }

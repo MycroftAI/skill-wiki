@@ -6,8 +6,6 @@ import Mycroft 1.0 as Mycroft
 
 Mycroft.CardDelegate {
     id: root
-    height: gridUnit * 26
-    width: gridUnit * 46
     cardBackgroundOverlayColor: "black"
 
     Title {
@@ -19,13 +17,28 @@ Mycroft.CardDelegate {
             text: sessionData.title
         }
 
-    Image {
-        id: featureImage
-        anchors.horizontalCenter: parent.horizontalCenter
+    Rectangle {
+        id: featureImageContainer
+        color: "black"
+        radius: 16
+        height: parent.height - gridUnit * 6
+        width: parent.width
         anchors.top: articleTitle.bottom
         anchors.topMargin: gridUnit * 2
-        height: gridUnit * 21
-        fillMode: Image.PreserveAspectFit
-        source: sessionData.imgLink
+        anchors.bottomMargin: gridUnit
+
+        Image {
+            id: featureImage
+            anchors.horizontalCenter: parent.horizontalCenter
+            height: parent.height
+            width: parent.width
+            fillMode: Image.PreserveAspectFit
+            source: sessionData.imgLink
+        }
+        Mycroft.BusyIndicator {
+            anchors.centerIn: parent
+            visible: sessionData.imgLink == ''
+            running: True
+        }
     }
 }
