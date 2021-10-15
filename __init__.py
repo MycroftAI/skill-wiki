@@ -16,7 +16,7 @@ from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
 from urllib3.exceptions import HTTPError
 
-from mycroft.skills import AdaptIntent, intent_handler
+from mycroft import AdaptIntent, intent_handler
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 
 from .wiki import Wiki, DisambiguationError, MediaWikiPage
@@ -43,6 +43,9 @@ class WikipediaSkill(CommonQuerySkill):
         """
         super(WikipediaSkill, self).__init__(name="WikipediaSkill")
         self._match = self._cqs_match = Article()
+        self.platform = self.config_core['enclosure'].get(
+            'platform', 'unknown'
+        )
         self.translated_question_words = self.translate_list("question_words")
         self.translated_question_verbs = self.translate_list("question_verbs")
         self.translated_articles = self.translate_list("articles")
@@ -303,10 +306,11 @@ class WikipediaSkill(CommonQuerySkill):
         """Read short summary to user."""
         summary, num_lines = self.wiki.get_summary_intro(page)
         self.speak(summary)
-        self.gui.show_image('', title=page.title)
-        image = self.wiki.get_best_image_url(page)
-        article = Article(page.title, page, summary, num_lines, image)
+        article = Article(page.title, page, summary, num_lines)
         self.display_article(article)
+        image = self.wiki.get_best_image_url(page)
+        article = article._replace(image=image)
+        self.update_display_data(article)
         # Remember context and speak results
         self._match = article
         # TODO improve context handling
@@ -319,11 +323,40 @@ class WikipediaSkill(CommonQuerySkill):
             article: Article containing necessary fields
         """
         self.gui.clear()
-        self.gui['title'] = article.title
-        self.gui['summary'] = article.summary
-        self.gui['imgLink'] = article.image
-        self.gui.show_image(article.image, title=article.title)
-        # self.gui.show_page("WikipediaDelegate.qml", override_idle=60)
+        self.gui['title'] = article.title or ''
+        self.gui['summary'] = article.summary or ''
+        self.gui['imgLink'] = article.image or ''
+        self._show_page("feature_image", override_idle=60)
+
+    def update_display_data(self, article: Article):
+        """Update the GUI display data when a page is already being shown.
+
+        Arguments:
+            article: Article containing necessary fields
+        """
+        self.gui['title'] = article.title or ''
+        self.gui['summary'] = article.summary or ''
+        self.gui['imgLink'] = article.image or ''
+
+    def _show_page(self, page_name_prefix: str, override_idle: bool = None):
+        """Display the correct page depending on the platform.
+
+        Args:
+            page_name_prefix: the first part of the QML file name is the same
+                              regardless of platform.
+            override_idle: whether or not the screen to show should override
+                           the resting screen.
+        """
+        if self.platform == 'mycroft_mark_2':
+            page_name_suffix = "_mark_ii"
+        else:
+            page_name_suffix = "_scalable"
+        page_name = page_name_prefix + page_name_suffix + ".qml"
+
+        if override_idle is not None:
+            self.gui.show_page(page_name, override_idle)
+        else:
+            self.gui.show_page(page_name)
 
     def stop(self):
         self.gui.release()
