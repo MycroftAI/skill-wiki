@@ -15,6 +15,7 @@
 import re
 from urllib3.exceptions import HTTPError
 
+import requests
 from mediawiki import (
     MediaWiki,
     MediaWikiPage,
@@ -28,7 +29,8 @@ from mycroft.util import LOG
 DEFAULT_IMAGE = 'ui/default-images/wikipedia-logo.svg'
 EXCLUDED_IMAGES = [
     'Blue_pencil.svg',
-    'OOjs_UI_icon_edit-ltr-progressive.svg'
+    'OOjs_UI_icon_edit-ltr-progressive.svg',
+    'Edit-clear.svg'
 ]
 
 
@@ -43,7 +45,7 @@ class Wiki():
         except HTTPError:
             raise
 
-    def get_best_image_url(self, page: MediaWikiPage) -> str:
+    def get_best_image_url(self, page: MediaWikiPage, max_width: int) -> str:
         """Get url of the best image from an existing Wiki page.
 
         Preference is given to the page thumbnail, otherwise we get the first
@@ -59,28 +61,37 @@ class Wiki():
         Returns:
             url of best image
         """
+        LOG.debug("Fetching best image for %s", page.title)
         image = None
-        if len(page.logos) > 0:
-            thumbnail = page.logos[0]
-            # Get hi-res image if available.
-            # This translates image urls between the following two formats
-            # https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Sialyl_lewis_a.svg/200px-Sialyl_lewis_a.svg.png
-            # https://upload.wikimedia.org/wikipedia/commons/d/d4/Sialyl_lewis_a.svg
-            full_image = '/'.join(thumbnail.replace('/thumb/',
-                                  '/').split('/')[:-1])
-            image = full_image if full_image in page.images else thumbnail
-        elif len(page.images) > 0:
-            image = next(img for img in page.images if img.split(
-                '/')[-1] not in EXCLUDED_IMAGES)
+
+        # try direct API call
+        api_url = f"https://en.wikipedia.org/w/api.php?action=query&formatversion=2&prop=pageimages&format=json&pithumbsize={max_width}&titles={page.title}"
+        response = requests.get(api_url)
+        if response.status_code < 300:
+            res_page = response.json().get('query', {}).get('pages', [False])[0]
+            if res_page:
+                image = res_page.get('thumbnail', {}).get('source')
+
+        # Else fallback to pymediawiki page scraping
+        if image is None:
+            thumbnails = page.logos
+            if len(thumbnails) > 0:
+                thumbnail = thumbnails[0]
+                # Get hi-res image if available.
+                # This translates image urls between the following two formats
+                # https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Sialyl_lewis_a.svg/200px-Sialyl_lewis_a.svg.png
+                # https://upload.wikimedia.org/wikipedia/commons/d/d4/Sialyl_lewis_a.svg
+                full_image = '/'.join(thumbnail.replace('/thumb/',
+                                                        '/').split('/')[:-1])
+                image = full_image if full_image in page.images else thumbnail
+            elif len(page.images) > 0:
+                try:
+                    image = next(img for img in page.images if img.split(
+                        '/')[-1] not in EXCLUDED_IMAGES)
+                except StopIteration:
+                    LOG.warning('Could not find an image for %s', page.title)
 
         LOG.debug('Image selected: %s', image)
-        LOG.debug('From page.logos:')
-        for url in page.logos:
-            LOG.debug(' - %s', url)
-        LOG.debug('and page.images:')
-        for url in page.images:
-            LOG.debug(' - %s', url)
-
         return image or DEFAULT_IMAGE
 
     @staticmethod
@@ -169,7 +180,7 @@ class Wiki():
         self.set_language(lang)
         return self.wiki.search(query)
 
-    def set_language(self, lang: str) -> bool:
+    def set_language(self, lang: str = None) -> bool:
         """Set the language for Wikipedia lookups.
 
         If the provided language cannot be found. The language used when
@@ -180,7 +191,9 @@ class Wiki():
         Returns:
             True if language changed successfully else False
         """
-        if lang == self.default_lang:
+        if lang is None:
+            lang = self.default_lang
+        if lang == self.wiki.language:
             is_changed = False
         elif lang not in self.wiki.supported_languages.keys():
             LOG.warning('Unable to set Wikipedia language to "%s"', lang)

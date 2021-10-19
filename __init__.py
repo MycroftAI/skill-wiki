@@ -46,6 +46,7 @@ class WikipediaSkill(CommonQuerySkill):
         self.platform = self.config_core['enclosure'].get(
             'platform', 'unknown'
         )
+        self.max_image_width = 416 if self.platform == 'mycroft_mark_ii' else 1920
         self.translated_question_words = self.translate_list("question_words")
         self.translated_question_verbs = self.translate_list("question_verbs")
         self.translated_articles = self.translate_list("articles")
@@ -134,7 +135,8 @@ class WikipediaSkill(CommonQuerySkill):
 
         if summary_to_read:
             # TODO consider showing next image on page instead of same image each time.
-            image = self.wiki.get_best_image_url(self._match.page)
+            image = self.wiki.get_best_image_url(
+                self._match.page, self.max_image_width)
             article = self._match._replace(
                 summary=summary_to_read,
                 num_lines_spoken=new_lines_spoken,
@@ -203,7 +205,7 @@ class WikipediaSkill(CommonQuerySkill):
             summary, num_lines = self.wiki.get_summary_intro(page)
 
         if image is None:
-            image = self.wiki.get_best_image_url(page)
+            image = self.wiki.get_best_image_url(page, self.max_image_width)
         article = Article(title, page, summary, num_lines, image)
         self.display_article(article)
         # Set context for follow up queries - "tell me more"
@@ -259,7 +261,7 @@ class WikipediaSkill(CommonQuerySkill):
         preventing delays in Common Query answer selection.
         """
         page = self._cqs_match.page
-        image = self.wiki.get_best_image_url(page)
+        image = self.wiki.get_best_image_url(page, self.max_image_width)
         self._cqs_match = self._cqs_match._replace(image=image)
 
     def handle_disambiguation(self, disambiguation_title: str) -> MediaWikiPage:
@@ -308,7 +310,7 @@ class WikipediaSkill(CommonQuerySkill):
         self.speak(summary)
         article = Article(page.title, page, summary, num_lines)
         self.display_article(article)
-        image = self.wiki.get_best_image_url(page)
+        image = self.wiki.get_best_image_url(page, self.max_image_width)
         article = article._replace(image=image)
         self.update_display_data(article)
         # Remember context and speak results
@@ -352,12 +354,13 @@ class WikipediaSkill(CommonQuerySkill):
             page_name_suffix = "_mark_ii"
         else:
             page_name_suffix = "_scalable"
-        platform_page_names = [f'{page_name}{page_name_suffix}.qml' for page_name in page_names]
+        platform_page_names = [f'{page_name}.qml' for page_name in page_names]
         # page_name = page_name_prefix + page_name_suffix + ".qml"
         self.log.info(platform_page_names)
 
         if override_idle is not None:
-            self.gui.show_pages(platform_page_names, override_idle=override_idle)
+            self.gui.show_pages(platform_page_names,
+                                override_idle=override_idle)
         else:
             self.gui.show_pages(platform_page_names)
 
