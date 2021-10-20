@@ -221,7 +221,7 @@ class Wiki():
         cleaned_text = remove_nested_parentheses(pymediawiki_summary)
 
         # Remove section headings
-        cleaned_text = re.sub(r'==.*?==', '', cleaned_text)
+        cleaned_text = re.sub(r'={2,}.*?={2,}', '', cleaned_text)
         # Remove white spaces
         cleaned_text = " ".join(cleaned_text.split()).strip()
         # Remove white space before comma - left by removal of other content
