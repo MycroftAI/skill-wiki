@@ -6,13 +6,11 @@ import QtGraphicalEffects 1.0
 import Mycroft 1.0 as Mycroft
 
 Item {
-    id: root
+    id: imgOuterContainer
     property alias imgSrc: img.source
-    property bool rounded: true
-    property bool imageModeExpanded: true
 
     Item {
-        id: imgRoot
+        id: imgInnerContainer
         width: parent.width
         height: parent.height
         anchors.horizontalCenter: parent.horizontalCenter
@@ -22,29 +20,12 @@ Item {
             id: img
             anchors.fill: parent
             opacity: 0
-            fillMode: imageModeExpanded ? Image.PreserveAspectCrop : Image.PreserveAspectFit
+            fillMode: Image.PreserveAspectFit
 
             asynchronous: true
             onStatusChanged: {
                 if (status == Image.Ready) {
-                    if (sourceSize.width >= root.width) {
-                        imageModeExpanded = true
-                        opacity = 1
-                    } else {
-                        imageModeExpanded = false
-                        opacity = 1
-                    }
-                }
-            }
-
-            layer.enabled: root.rounded ? 1 : 0
-            layer.effect: OpacityMask {
-                cached: true
-                maskSource: Rectangle {
-                    width: imgRoot.width
-                    height: imgRoot.height
-                    visible: false
-                    radius: Mycroft.Units.gridUnit
+                    opacity = 1
                 }
             }
         }
