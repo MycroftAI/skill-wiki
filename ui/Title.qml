@@ -31,6 +31,7 @@ import QtQuick 2.4
 import QtQuick.Layouts 1.1
 import QtQuick.Controls 2.3
 import QtGraphicalEffects 1.0
+import Mycroft 1.0 as Mycroft
 
 Item {
     property alias fontSize: title.font.pixelSize
@@ -41,8 +42,8 @@ Item {
     property color textColor: "#FFFFFF"
     property bool centerText: true
 
-    height: heightUnits ? gridUnit * heightUnits : parent.height
-    width: widthUnits ? gridUnit * widthUnits : parent.width
+    height: heightUnits ? Mycroft.Units.gridUnit * heightUnits : parent.height
+    width: widthUnits ? Mycroft.Units.gridUnit * widthUnits : parent.width
 
     Label {
         id: title
