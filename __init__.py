@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from collections import namedtuple
-from concurrent.futures import ThreadPoolExecutor
 from urllib3.exceptions import HTTPError
 
 from mycroft import AdaptIntent, intent_handler
