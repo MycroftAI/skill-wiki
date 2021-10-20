@@ -12,11 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mediawiki import (
-    MediaWiki,
-    MediaWikiPage,
-    PageError,
-    DisambiguationError
-)
-
-from .pymediawiki import Wiki
+def remove_nested_parentheses(input: str) -> str:
+    """Remove content contained within parentheses from a string.
+    
+    This includes content that is nested within multiple sets, eg:
+    Lemurs (/ˈliːmər/ (listen) LEE-mər)
+    """
+    ret = ''
+    nest_depth = 0
+    for char in input:
+        if char == '(':
+            nest_depth += 1
+        elif (char == ')') and nest_depth:
+            nest_depth -= 1
+        elif not nest_depth:
+            ret += char
+    return ret

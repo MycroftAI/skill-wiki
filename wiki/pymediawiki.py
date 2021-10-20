@@ -24,6 +24,7 @@ from mediawiki import (
 )
 
 from mycroft.util import LOG
+from .util import remove_nested_parentheses
 
 
 DEFAULT_IMAGE = 'ui/default-images/wikipedia-logo.svg'
@@ -146,11 +147,12 @@ class Wiki():
         """
         length = 20 if self.auto_more else 2
         answer = self.summarize_page(page, sentences=length)
-        if not self.auto_more and len(answer) > 250:
-            answer = self.summarize_page(page, sentences=1)
+        if not self.auto_more and len(answer) > 300:
+            length = 1
+            answer = self.summarize_page(page, sentences=length)
         return answer, length
 
-    def get_summary_next_lines(self, page: MediaWikiPage, previous_lines: int, num_lines: int = 5) -> tuple([str, int]):
+    def get_summary_next_lines(self, page: MediaWikiPage, previous_lines: int = 2, num_lines: int = 5) -> tuple([str, int]):
         """Get the next summary lines to be read.
 
         Args:
@@ -162,7 +164,7 @@ class Wiki():
             total length of summary read so far ie previous_lines + num_lines
         """
         total_summary_read = previous_lines + num_lines
-        previously_read = page.summarize(sentences=previous_lines)
+        previously_read = self.summarize_page(page, sentences=previous_lines)
         next_summary_section = self.summarize_page(
             page, sentences=total_summary_read).replace(previously_read, '')
         return next_summary_section, total_summary_read
@@ -214,6 +216,7 @@ class Wiki():
             sentences: number of sentences to return
         """
         pymediawiki_summary = page.summarize(sentences=sentences)
-        cleaned_text = re.sub(
-            "\(.*?\)", "", pymediawiki_summary).replace('  ', ' ')
+        cleaned_text = remove_nested_parentheses(pymediawiki_summary)
+        # remove white spaces
+        cleaned_text = " ".join(cleaned_text.split())
         return cleaned_text
