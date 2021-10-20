@@ -31,5 +31,7 @@ def then_dialog(context, skill, dialog):
 
     assert passed, assert_msg or 'Mycroft didn\'t respond'
 
-
+@then('there will be a short delay')
+def short_sleep(context):
+    time.sleep(1)
 
