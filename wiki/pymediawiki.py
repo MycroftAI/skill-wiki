@@ -217,6 +217,8 @@ class Wiki():
         """
         pymediawiki_summary = page.summarize(sentences=sentences)
         cleaned_text = remove_nested_parentheses(pymediawiki_summary)
+        # remove section headings
+        cleaned_text = re.sub(r'==.*?==', '', cleaned_text)
         # remove white spaces
-        cleaned_text = " ".join(cleaned_text.split())
+        cleaned_text = " ".join(cleaned_text.split()).strip()
         return cleaned_text
