@@ -215,10 +215,19 @@ class Wiki():
             page: to get summary of
             sentences: number of sentences to return
         """
+        # TODO consider splitting out each step to its own function
+        # will enable detailed testing of each step and the whole.
         pymediawiki_summary = page.summarize(sentences=sentences)
         cleaned_text = remove_nested_parentheses(pymediawiki_summary)
-        # remove section headings
+
+        # Remove section headings
         cleaned_text = re.sub(r'==.*?==', '', cleaned_text)
-        # remove white spaces
+        # Remove white spaces
         cleaned_text = " ".join(cleaned_text.split()).strip()
+        # Remove white space before comma - left by removal of other content
+        cleaned_text = cleaned_text.replace(' , ', ', ')
+        # Separate joined sentences eg "end of one.Start of another"
+        # Only perform this when a new sentence starts with a capitalized word
+        # will not cath sentences starting with single letters.
+        cleaned_text = re.sub(r'\.([A-Z][a-z]+)', r'. \1', cleaned_text)
         return cleaned_text
