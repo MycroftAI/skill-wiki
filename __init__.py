@@ -132,14 +132,16 @@ class WikipediaSkill(CommonQuerySkill):
         summary_to_read, new_lines_spoken = self.wiki.get_summary_next_lines(
             self._match.page, self._match.num_lines_spoken)
 
-        if summary_to_read:
+        if self._match.image is None:
             # TODO consider showing next image on page instead of same image each time.
             image = self.wiki.get_best_image_url(
                 self._match.page, self.max_image_width)
+            article = self._match._replace(image=image)
+
+        if summary_to_read:
             article = self._match._replace(
                 summary=summary_to_read,
-                num_lines_spoken=new_lines_spoken,
-                image=image)
+                num_lines_spoken=new_lines_spoken)
             self.display_article(article)
             self.speak(summary_to_read)
             # Update context
