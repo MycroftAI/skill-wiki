@@ -276,12 +276,12 @@ class WikipediaSkill(CommonQuerySkill):
         try:
             self.wiki.get_page(disambiguation_title)
         except DisambiguationError as disambiguation:
-            self.log.info(disambiguation.options)
-            self.log.info(disambiguation.details)
+            self.log.debug(disambiguation.options)
+            self.log.debug(disambiguation.details)
             options = disambiguation.options[:3]
             self.speak_dialog('disambiguate-intro')
             choice = self.ask_selection(options)
-            self.log.info('Disambiguation choice is {}'.format(choice))
+            self.log.debug('Disambiguation choice is {}'.format(choice))
             try:
                 wiki_page = self.wiki.get_page(choice)
             except HTTPError as error:
@@ -329,8 +329,7 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui['title'] = article.title or ''
         self.gui['summary'] = article.summary or ''
         self.gui['imgLink'] = article.image or ''
-        self.log.info(self.gui['summary'])
-        self._show_pages(['feature_image', 'summary'], override_idle=60)
+        self.gui.show_pages(['feature_image.qml', 'summary.qml'], override_idle=60)
 
     def update_display_data(self, article: Article):
         """Update the GUI display data when a page is already being shown.
@@ -341,29 +340,6 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui['title'] = article.title or ''
         self.gui['summary'] = article.summary or ''
         self.gui['imgLink'] = article.image or ''
-
-    def _show_pages(self, page_names: list([str]), override_idle: bool = None):
-        """Display the correct page depending on the platform.
-
-        Args:
-            page_names: the base part of the QML file name is the same
-                        regardless of platform.
-            override_idle: whether or not the screen to show should override
-                           the resting screen.
-        """
-        if self.platform == 'mycroft_mark_2':
-            page_name_suffix = "_mark_ii"
-        else:
-            page_name_suffix = "_scalable"
-        platform_page_names = [f'{page_name}.qml' for page_name in page_names]
-        # page_name = page_name_prefix + page_name_suffix + ".qml"
-        self.log.info(platform_page_names)
-
-        if override_idle is not None:
-            self.gui.show_pages(platform_page_names,
-                                override_idle=override_idle)
-        else:
-            self.gui.show_pages(platform_page_names)
 
     def stop(self):
         self.gui.release()
