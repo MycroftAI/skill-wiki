@@ -87,6 +87,9 @@ class WikipediaSkill(CommonQuerySkill):
         self.speak_dialog("searching", {"query": query})
         try:
             page, disambiguation_page = self.search_wikipedia(query)
+            if page is None:
+                self.report_no_match(query)
+                return
             self.log.info(f"Best result from Wikipedia is: {page.title}")
             self.handle_result(page)
             # TODO determine intended disambiguation behaviour
@@ -241,6 +244,8 @@ class WikipediaSkill(CommonQuerySkill):
         self.log.info(f"Searching wikipedia for {query}")
         lang = self.translate_namedvalues("wikipedia_lang")['code']
         results = self.wiki.search(query, lang=lang)
+        if len(results) < 1:
+            return None, None
         try:
             wiki_page = self.wiki.get_page(results[0])
             disambiguation = self.wiki.get_disambiguation_page(results)
@@ -301,9 +306,9 @@ class WikipediaSkill(CommonQuerySkill):
         else:
             self.report_match(page)
 
-    def report_no_match(self):
+    def report_no_match(self, query: str):
         """Answer no match found."""
-        self.speak_dialog("no entry found")
+        self.speak_dialog("no entry found", data={'topic': query})
 
     def report_match(self, page: MediaWikiPage):
         """Read short summary to user."""
