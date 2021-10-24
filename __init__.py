@@ -15,10 +15,15 @@
 from collections import namedtuple
 from urllib3.exceptions import HTTPError
 
+from requests.exceptions import ConnectionError, ReadTimeout
+
 from mycroft import AdaptIntent, intent_handler
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 
 from .wiki import Wiki, DisambiguationError, MediaWikiPage
+
+
+CONNECTION_ERRORS = (ConnectionError, HTTPError, ReadTimeout)
 
 
 Article = namedtuple(
@@ -63,7 +68,7 @@ class WikipediaSkill(CommonQuerySkill):
                 'code']
             auto_more = self.config_core.get('cq_auto_more', False)
             self.wiki = Wiki(wikipedia_lang_code, auto_more)
-        except HTTPError:
+        except CONNECTION_ERRORS:
             if self._num_wiki_connection_attempts < 1:
                 self.log.warning(
                     "Cannot connect to Wikipedia. Will try again in 10 minutes")
@@ -105,7 +110,7 @@ class WikipediaSkill(CommonQuerySkill):
                 new_page = self.handle_disambiguation(disambiguation_page)
                 if new_page is not None:
                     self.handle_result(new_page)
-        except HTTPError:
+        except CONNECTION_ERRORS:
             self.speak_dialog('connection-error')
 
     @intent_handler("Random.intent")
@@ -174,7 +179,7 @@ class WikipediaSkill(CommonQuerySkill):
         if cleaned_query is not None:
             try:
                 page, _ = self.search_wikipedia(cleaned_query)
-            except HTTPError:
+            except CONNECTION_ERRORS:
                 return
 
         if page:
@@ -255,7 +260,7 @@ class WikipediaSkill(CommonQuerySkill):
             # Eg "George Church"
             wiki_page = self.wiki.get_page(results[1])
             disambiguation = results[0]
-        except HTTPError as error:
+        except CONNECTION_ERRORS as error:
             self.log.exception(error)
             raise error
         return wiki_page, disambiguation
@@ -289,7 +294,7 @@ class WikipediaSkill(CommonQuerySkill):
             self.log.debug('Disambiguation choice is {}'.format(choice))
             try:
                 wiki_page = self.wiki.get_page(choice)
-            except HTTPError as error:
+            except CONNECTION_ERRORS as error:
                 self.log.exception(error)
                 raise error
             return wiki_page
