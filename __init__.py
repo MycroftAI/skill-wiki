@@ -348,9 +348,6 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui['summary'] = article.summary or ''
         self.gui['imgLink'] = article.image or ''
 
-    def stop(self):
-        self.gui.release()
-
 
 def create_skill():
     return WikipediaSkill()
