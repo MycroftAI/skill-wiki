@@ -248,18 +248,19 @@ class WikipediaSkill(CommonQuerySkill):
         """
         self.log.info(f"Searching wikipedia for {query}")
         lang = self.translate_namedvalues("wikipedia_lang")['code']
-        results = self.wiki.search(query, lang=lang)
-        if len(results) < 1:
-            return None, None
         try:
-            wiki_page = self.wiki.get_page(results[0])
-            disambiguation = self.wiki.get_disambiguation_page(results)
-        except DisambiguationError:
-            # Some disambiguation pages aren't explicitly labelled.
-            # The only guaranteed way to know is to fetch the page.
-            # Eg "George Church"
-            wiki_page = self.wiki.get_page(results[1])
-            disambiguation = results[0]
+            results = self.wiki.search(query, lang=lang)
+            if len(results) < 1:
+                return None, None
+            try:
+                wiki_page = self.wiki.get_page(results[0])
+                disambiguation = self.wiki.get_disambiguation_page(results)
+            except DisambiguationError:
+                # Some disambiguation pages aren't explicitly labelled.
+                # The only guaranteed way to know is to fetch the page.
+                # Eg "George Church"
+                wiki_page = self.wiki.get_page(results[1])
+                disambiguation = results[0]
         except CONNECTION_ERRORS as error:
             self.log.exception(error)
             raise error
