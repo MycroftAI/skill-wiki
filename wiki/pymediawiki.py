@@ -66,12 +66,17 @@ class Wiki():
         image = None
 
         # try direct API call
-        api_url = f"https://en.wikipedia.org/w/api.php?action=query&formatversion=2&prop=pageimages&format=json&pithumbsize={max_width}&titles={page.title}"
+        api_url = (
+            "https://en.wikipedia.org/w/api.php?action=query&"
+            "formatversion=2&prop=pageimages&format=json&"
+            f"pithumbsize={max_width}&titles={page.title}"
+        )
         response = requests.get(api_url)
         if response.status_code < 300:
-            res_page = response.json().get('query', {}).get('pages', [False])[0]
-            if res_page:
-                image = res_page.get('thumbnail', {}).get('source')
+            page_image_data = response.json().get(
+                'query', {}).get('pages', [False])[0]
+            if page_image_data:
+                image = page_image_data.get('thumbnail', {}).get('source')
 
         # Else fallback to pymediawiki page scraping
         if image is None:
