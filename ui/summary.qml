@@ -23,7 +23,6 @@ Mycroft.CardDelegate {
         id: articleSummary
         anchors.fill: parent
         wrapMode: Text.Wrap
-        font.family: "Noto Sans"
         color: "#FFFFFF"
         text: sessionData.summary
     }
