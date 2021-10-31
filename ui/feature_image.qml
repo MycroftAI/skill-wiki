@@ -13,10 +13,6 @@
 // limitations under the License.
 
 import QtQuick 2.4
-import QtQuick.Controls 2.2
-import QtQuick.Layouts 1.4
-import org.kde.kirigami 2.4 as Kirigami
-import QtGraphicalEffects 1.0
 import Mycroft 1.0 as Mycroft
 
 Mycroft.CardDelegate {
