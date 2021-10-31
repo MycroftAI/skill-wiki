@@ -341,7 +341,8 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui['imgLink'] = article.image or ''
         # TODO - Duration of article display currently fixed at 60 seconds.
         # This should be more closely tied with the speech of the summary.
-        self.gui.show_pages(['feature_image.qml', 'summary.qml'], override_idle=60)
+        self.gui.show_pages(
+            ['feature_image.qml', 'summary.qml'], override_idle=60)
 
     def update_display_data(self, article: Article):
         """Update the GUI display data when a page is already being shown.
