@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 from urllib3.exceptions import HTTPError
 
 import requests
@@ -24,7 +23,7 @@ from mediawiki import (
 )
 
 from mycroft.util import LOG
-from .util import remove_nested_parentheses
+from .util import clean_text
 
 
 DEFAULT_IMAGE = 'ui/default-images/wikipedia-logo.svg'
@@ -217,22 +216,12 @@ class Wiki():
         The summary is also cleaned for better spoken output.
 
         Args:
-            page: to get summary of
-            sentences: number of sentences to return
+            page: Wiki page to get a summary of.
+            sentences: Number of sentences to return.
         """
         # TODO consider splitting out each step to its own function
         # will enable detailed testing of each step and the whole.
         pymediawiki_summary = page.summarize(sentences=sentences)
-        cleaned_text = remove_nested_parentheses(pymediawiki_summary)
+        cleaned_text = clean_text(pymediawiki_summary)
 
-        # Remove section headings
-        cleaned_text = re.sub(r'={2,}.*?={2,}', '', cleaned_text)
-        # Remove white spaces
-        cleaned_text = " ".join(cleaned_text.split()).strip()
-        # Remove white space before comma - left by removal of other content
-        cleaned_text = cleaned_text.replace(' , ', ', ')
-        # Separate joined sentences eg "end of one.Start of another"
-        # Only perform this when a new sentence starts with a capitalized word
-        # will not cath sentences starting with single letters.
-        cleaned_text = re.sub(r'\.([A-Z][a-z]+)', r'. \1', cleaned_text)
         return cleaned_text
