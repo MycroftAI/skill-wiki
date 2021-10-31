@@ -22,9 +22,9 @@ Mycroft.CardDelegate {
     Title {
         id: articleTitle
         anchors.top: parent.top
-        anchors.topMargin: Mycroft.Units.gridUnit
+        anchors.topMargin: gridUnit
         anchors.horizontalCenter: parent.horizontalCenter
-        fontSize: Mycroft.Units.gridUnit * 3
+        fontSize: gridUnit * 3
         fontStyle: "Bold"
         heightUnits: 3
         text: sessionData.title
@@ -32,7 +32,7 @@ Mycroft.CardDelegate {
 
     Img {
         width: parent.width
-        height: parent.height - Mycroft.Units.gridUnit * 6
+        height: parent.height - gridUnit * 6
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         imgSrc: sessionData.imgLink
