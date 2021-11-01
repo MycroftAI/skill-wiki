@@ -259,8 +259,9 @@ class WikipediaSkill(CommonQuerySkill):
                 # Some disambiguation pages aren't explicitly labelled.
                 # The only guaranteed way to know is to fetch the page.
                 # Eg "George Church"
-                wiki_page = self.wiki.get_page(results[1])
-                disambiguation = results[0]
+                disambiguation, wiki_page = self.wiki.handle_disambiguation_error(results)
+                self.log.error(disambiguation)
+                self.log.error(wiki_page)
         except CONNECTION_ERRORS as error:
             self.log.exception(error)
             raise error
@@ -298,6 +299,8 @@ class WikipediaSkill(CommonQuerySkill):
             except CONNECTION_ERRORS as error:
                 self.log.exception(error)
                 raise error
+            except DisambiguationError:
+                self.handle_disambiguation(choice)
             return wiki_page
 
     def handle_result(self, page: MediaWikiPage):

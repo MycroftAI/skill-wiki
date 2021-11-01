@@ -173,6 +173,37 @@ class Wiki():
             page, sentences=total_summary_read).replace(previously_read, '')
         return next_summary_section, total_summary_read
 
+    def handle_disambiguation_error(self, search_results: list, prev_disambiguation_title: str = None) -> list([MediaWikiPage, str]):
+        """Attempt to get valid MediaWikiPage from a DisambiguationError.
+
+        This is a recursive method because a Disambiguation Page may refer to
+        another Disambiguation Page.
+
+        Args:
+            err: DisambiguationError raised by pymediawiki
+            previous_disambiguation_title: top level disambiguation page title
+        Returns:
+            Top level disambiguation page title,
+            MediaWikiPage of most likely result OR None
+        """
+        if len(search_results) <= 0:
+            return None, None
+        disambiguation_title = search_results[0]
+
+        if len(search_results) <= 1:
+            return disambiguation_title, None
+
+        try:
+            wiki_page = self.get_page(search_results[1])
+        except DisambiguationError:
+            _, wiki_page = self.handle_disambiguation_error([
+                disambiguation_title,
+                *search_results[2:]
+            ])
+        
+        return disambiguation_title, wiki_page
+
+
     def search(self, query: str, lang: str = 'en') -> list([str]):
         """Search wikipedia for the given query.
 
