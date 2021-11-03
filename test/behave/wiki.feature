@@ -4,6 +4,7 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about a person>"
      Then "skill-wiki" should reply with dialog from "searching.dialog"
+     Then there will be a short delay
      And mycroft reply should contain "<person>"
      Then dialog is stopped
 
@@ -23,6 +24,7 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about a person>"
      Then "skill-wiki" should reply with dialog from "searching.dialog"
+     Then there will be a short delay
      And mycroft reply should contain "<person>"
      Then dialog is stopped
 
@@ -34,6 +36,7 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about a place>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
+     Then there will be a short delay
      And mycroft reply should contain "<place>"
      Then dialog is stopped
 
@@ -49,6 +52,7 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about a thing>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
+     Then there will be a short delay
      And mycroft reply should contain "<thing>"
      Then dialog is stopped
 
@@ -64,6 +68,7 @@ Feature: Wikipedia Skill
     Given an english speaking user
      When the user says "<tell me about an idea>"
      Then "mycroft-wiki" should reply with dialog from "searching.dialog"
+     Then there will be a short delay
      And mycroft reply should contain "<idea>"
      Then dialog is stopped
 

@@ -1,1 +1,2 @@
-wikipedia==1.4.0
+pymediawiki~=0.7.0
+requests
