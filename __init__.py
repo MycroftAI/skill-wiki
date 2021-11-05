@@ -18,7 +18,7 @@ from urllib3.exceptions import HTTPError
 from requests.exceptions import ConnectionError, ReadTimeout
 
 from mycroft import AdaptIntent, intent_handler
-from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
+from mycroft.skills.common_query_skill import CommonQuerySkill, CQSVisualMatchLevel
 
 from .wiki import Wiki, DisambiguationError, MediaWikiPage
 
@@ -158,7 +158,7 @@ class WikipediaSkill(CommonQuerySkill):
         else:
             self.speak_dialog("thats all")
 
-    def CQS_match_query_phrase(self, query: str) -> tuple([str, CQSMatchLevel, str, dict]):
+    def CQS_match_query_phrase(self, query: str) -> tuple([str, CQSVisualMatchLevel, str, dict]):
         """Respond to Common Query framework with best possible answer.
 
         Args:
@@ -188,7 +188,7 @@ class WikipediaSkill(CommonQuerySkill):
             self._cqs_match = Article(page.title, page, answer, num_lines)
         if answer:
             self.schedule_event(self.get_cqs_match_image, 0)
-            return (query, CQSMatchLevel.CATEGORY, answer, callback_data)
+            return (query, CQSVisualMatchLevel.CATEGORY, answer, callback_data)
         return answer
 
     def CQS_action(self, phrase: str, data: dict):
