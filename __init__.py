@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import typing
 from collections import namedtuple
 from urllib3.exceptions import HTTPError
 
@@ -55,6 +56,14 @@ class WikipediaSkill(CommonQuerySkill):
         self.translated_question_verbs = self.translate_list("question_verbs")
         self.translated_articles = self.translate_list("articles")
         self._num_wiki_connection_attempts = 0
+        self.wiki: typing.Optional[Wiki] = None
+
+    def initialize(self):
+        """Wait for internet connection before connecting to Wikipedia"""
+        self.add_event("mycroft.internet-ready", self.handle_internet_ready)
+
+    def handle_internet_ready(self, _):
+        """Attempt connection to Wikipedia"""
         self.init_wikipedia()
 
     def init_wikipedia(self):
@@ -96,7 +105,7 @@ class WikipediaSkill(CommonQuerySkill):
                 self.report_no_match(query)
                 return
             self.log.info(f"Best result from Wikipedia is: {page.title}")
-            self.handle_result(page)
+            self.handle_result(page, query)
             # TODO determine intended disambiguation behaviour
             # disabling disambiguation for now.
             if False and disambiguation_page is not None:
@@ -109,7 +118,7 @@ class WikipediaSkill(CommonQuerySkill):
                         return
                 new_page = self.handle_disambiguation(disambiguation_page)
                 if new_page is not None:
-                    self.handle_result(new_page)
+                    self.handle_result(new_page, query)
         except CONNECTION_ERRORS:
             self.speak_dialog('connection-error')
 
@@ -119,11 +128,15 @@ class WikipediaSkill(CommonQuerySkill):
 
         Uses the Special:Random page of wikipedia
         """
+        if self.wiki is None:
+            self.log.error('not connected to wikipedia')
+            return
+
         self.log.info("Fetching random Wikipedia page")
         lang = self.translate_namedvalues("wikipedia_lang")['code']
         page = self.wiki.get_random_page(lang=lang)
         self.log.info("Random page selected: %s", page.title)
-        self.handle_result(page)
+        self.handle_result(page, "random page")
 
     @intent_handler(AdaptIntent().require("More").require("wiki_article"))
     def handle_tell_more(self, message):
@@ -135,6 +148,10 @@ class WikipediaSkill(CommonQuerySkill):
         # Read more of the last article queried
         if not self._match:
             self.log.error('handle_tell_more called without previous match')
+            return
+
+        if self.wiki is None:
+            self.log.error('not connected to wikipedia')
             return
 
         summary_to_read, new_lines_spoken = self.wiki.get_summary_next_lines(
@@ -172,6 +189,10 @@ class WikipediaSkill(CommonQuerySkill):
                 callback dict available to CQS_action method
             )
         """
+        if self.wiki is None:
+            self.log.error('not connected to wikipedia')
+            return
+
         answer = None
         callback_data = dict()
         cleaned_query = self.extract_topic(query)
@@ -200,6 +221,10 @@ class WikipediaSkill(CommonQuerySkill):
             phrase: User utterance of original question
             data: Callback data specified in CQS_match_query_phrase()
         """
+        if self.wiki is None:
+            self.log.error('not connected to wikipedia')
+            return
+
         title = data.get('title')
         if title is None:
             self.log.error("No title returned from CQS match")
@@ -246,6 +271,10 @@ class WikipediaSkill(CommonQuerySkill):
             wiki page for best result,
             disambiguation page title or None
         """
+        if self.wiki is None:
+            self.log.error('not connected to wikipedia')
+            return
+
         self.log.info(f"Searching wikipedia for {query}")
         lang = self.translate_namedvalues("wikipedia_lang")['code']
         try:
@@ -273,6 +302,10 @@ class WikipediaSkill(CommonQuerySkill):
         This is called from a scheduled event to run in its own thread,
         preventing delays in Common Query answer selection.
         """
+        if self.wiki is None:
+            self.log.error('not connected to wikipedia')
+            return
+
         page = self._cqs_match.page
         image = self.wiki.get_best_image_url(page, self.max_image_width)
         self._cqs_match = self._cqs_match._replace(image=image)
@@ -303,7 +336,7 @@ class WikipediaSkill(CommonQuerySkill):
                 self.handle_disambiguation(choice)
             return wiki_page
 
-    def handle_result(self, page: MediaWikiPage):
+    def handle_result(self, page: MediaWikiPage, query: str):
         """Handle result depending on result type.
 
         Speaks appropriate feedback to user depending of the result type.
@@ -311,7 +344,7 @@ class WikipediaSkill(CommonQuerySkill):
             page: wiki page for search result
         """
         if page is None:
-            self.report_no_match()
+            self.report_no_match(query)
         else:
             self.report_match(page)
 
@@ -321,6 +354,10 @@ class WikipediaSkill(CommonQuerySkill):
 
     def report_match(self, page: MediaWikiPage):
         """Read short summary to user."""
+        if self.wiki is None:
+            self.log.error('not connected to wikipedia')
+            return
+
         summary, num_lines = self.wiki.get_summary_intro(page)
         self.speak(summary)
         article = Article(page.title, page, summary, num_lines)
