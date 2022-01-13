@@ -361,6 +361,7 @@ class WikipediaSkill(CommonQuerySkill):
             return
 
         summary, num_lines = self.wiki.get_summary_intro(page)
+        # wait for the "just a minute while I look for that" dialog to finish
         wait_while_speaking()
         self.speak(summary)
         article = Article(page.title, page, summary, num_lines)
@@ -368,6 +369,7 @@ class WikipediaSkill(CommonQuerySkill):
         image = self.wiki.get_best_image_url(page, self.max_image_width)
         article = article._replace(image=image)
         self.update_display_data(article)
+        # Wait for the summary to finish, then remove skill from GUI
         wait_while_speaking()
         self.gui.clear()
         # Remember context and speak results
@@ -384,10 +386,8 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui['title'] = article.title or ''
         self.gui['summary'] = article.summary or ''
         self.gui['imgLink'] = article.image or ''
-        # TODO - Duration of article display currently fixed at 60 seconds.
-        # This should be more closely tied with the speech of the summary.
         self.gui.show_pages(
-            ['feature_image.qml', 'summary.qml'], override_idle=60)
+            ['feature_image.qml', 'summary.qml'], override_idle=True)
 
     def update_display_data(self, article: Article):
         """Update the GUI display data when a page is already being shown.
