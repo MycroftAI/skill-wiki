@@ -19,6 +19,7 @@ from urllib3.exceptions import HTTPError
 from requests.exceptions import ConnectionError, ReadTimeout
 
 from mycroft import AdaptIntent, intent_handler
+from mycroft.audio.utils import wait_while_speaking
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 
 from .wiki import Wiki, DisambiguationError, MediaWikiPage
@@ -168,7 +169,8 @@ class WikipediaSkill(CommonQuerySkill):
                 summary=summary_to_read,
                 num_lines_spoken=new_lines_spoken)
             self.display_article(article)
-            self.speak(summary_to_read)
+            self.speak(summary_to_read, wait=True)
+            self.gui.clear()
             # Update context
             self._match = article
             self.set_context("wiki_article", "")
@@ -359,12 +361,15 @@ class WikipediaSkill(CommonQuerySkill):
             return
 
         summary, num_lines = self.wiki.get_summary_intro(page)
+        wait_while_speaking()
         self.speak(summary)
         article = Article(page.title, page, summary, num_lines)
         self.display_article(article)
         image = self.wiki.get_best_image_url(page, self.max_image_width)
         article = article._replace(image=image)
         self.update_display_data(article)
+        wait_while_speaking()
+        self.gui.clear()
         # Remember context and speak results
         self._match = article
         # TODO improve context handling
@@ -376,7 +381,6 @@ class WikipediaSkill(CommonQuerySkill):
         Arguments:
             article: Article containing necessary fields
         """
-        self.gui.clear()
         self.gui['title'] = article.title or ''
         self.gui['summary'] = article.summary or ''
         self.gui['imgLink'] = article.image or ''
