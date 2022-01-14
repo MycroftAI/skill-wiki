@@ -140,7 +140,7 @@ class WikipediaSkill(CommonQuerySkill):
         self.handle_result(page, "random page")
 
     @intent_handler(AdaptIntent().require("More").require("wiki_article"))
-    def handle_tell_more(self, message):
+    def handle_tell_more(self, _):
         """Follow up query handler, "tell me more".
 
         If a "spoken_lines" entry exists in the active contexts
@@ -171,6 +171,7 @@ class WikipediaSkill(CommonQuerySkill):
             self.display_article(article)
             self.speak(summary_to_read, wait=True)
             self.gui.clear()
+
             # Update context
             self._match = article
             self.set_context("wiki_article", "")
@@ -244,6 +245,9 @@ class WikipediaSkill(CommonQuerySkill):
             image = self.wiki.get_best_image_url(page, self.max_image_width)
         article = Article(title, page, summary, num_lines, image)
         self.display_article(article)
+        # Wait for the summary to finish, then remove skill from GUI
+        wait_while_speaking()
+        self.gui.clear()
         # Set context for follow up queries - "tell me more"
         self._match = article
         self.set_context("wiki_article", "")
