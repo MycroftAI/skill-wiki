@@ -403,6 +403,10 @@ class WikipediaSkill(CommonQuerySkill):
         self.gui['summary'] = article.summary or ''
         self.gui['imgLink'] = article.image or ''
 
+    def stop(self):
+        self.log.debug("wiki stop() hit")
+        self.CQS_release_output_focus()
+
 
 def create_skill():
     return WikipediaSkill()
