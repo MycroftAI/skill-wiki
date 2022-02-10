@@ -20,6 +20,7 @@ from requests.exceptions import ConnectionError, ReadTimeout
 
 from mycroft import AdaptIntent, intent_handler
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
+from mycroft.audio.utils import wait_while_speaking
 
 from .wiki import Wiki, DisambiguationError, MediaWikiPage
 
@@ -247,6 +248,7 @@ class WikipediaSkill(CommonQuerySkill):
         article = Article(title, page, summary, num_lines, image)
         self.display_article(article)
         # Wait for the summary to finish, then remove skill from GUI
+        wait_while_speaking()
         self.gui.clear()
         # Set context for follow up queries - "tell me more"
         self._match = article
