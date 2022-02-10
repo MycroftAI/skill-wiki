@@ -19,7 +19,6 @@ from urllib3.exceptions import HTTPError
 from requests.exceptions import ConnectionError, ReadTimeout
 
 from mycroft import AdaptIntent, intent_handler
-from mycroft.audio.utils import wait_while_speaking
 from mycroft.skills.common_query_skill import CommonQuerySkill, CQSMatchLevel
 
 from .wiki import Wiki, DisambiguationError, MediaWikiPage
@@ -101,7 +100,7 @@ class WikipediaSkill(CommonQuerySkill):
         with self.activity():
             query = self.extract_topic(message.data.get("ArticleTitle"))
             # Talk to the user, as this can take a little time...
-            self.speak_dialog("searching", {"query": query})
+            # self.speak_dialog("searching", {"query": query})
             try:
                 page, disambiguation_page = self.search_wikipedia(query)
                 if page is None:
@@ -248,7 +247,6 @@ class WikipediaSkill(CommonQuerySkill):
         article = Article(title, page, summary, num_lines, image)
         self.display_article(article)
         # Wait for the summary to finish, then remove skill from GUI
-        wait_while_speaking()
         self.gui.clear()
         # Set context for follow up queries - "tell me more"
         self._match = article
@@ -330,7 +328,7 @@ class WikipediaSkill(CommonQuerySkill):
             self.log.debug(disambiguation.options)
             self.log.debug(disambiguation.details)
             options = disambiguation.options[:3]
-            self.speak_dialog('disambiguate-intro')
+            self.speak_dialog('disambiguate-intro', wait=True)
             choice = self.ask_selection(options)
             self.log.debug('Disambiguation choice is {}'.format(choice))
             try:
@@ -356,7 +354,7 @@ class WikipediaSkill(CommonQuerySkill):
 
     def report_no_match(self, query: str):
         """Answer no match found."""
-        self.speak_dialog("no entry found", data={'topic': query})
+        self.speak_dialog("no entry found", data={'topic': query}, wait=True)
 
     def report_match(self, page: MediaWikiPage):
         """Read short summary to user."""
@@ -366,15 +364,13 @@ class WikipediaSkill(CommonQuerySkill):
 
         summary, num_lines = self.wiki.get_summary_intro(page)
         # wait for the "just a minute while I look for that" dialog to finish
-        wait_while_speaking()
-        self.speak(summary)
         article = Article(page.title, page, summary, num_lines)
         self.display_article(article)
         image = self.wiki.get_best_image_url(page, self.max_image_width)
         article = article._replace(image=image)
         self.update_display_data(article)
         # Wait for the summary to finish, then remove skill from GUI
-        wait_while_speaking()
+        self.speak(summary, wait=True)
         self.gui.clear()
         # Remember context and speak results
         self._match = article
