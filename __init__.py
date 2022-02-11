@@ -368,11 +368,12 @@ class WikipediaSkill(CommonQuerySkill):
         # wait for the "just a minute while I look for that" dialog to finish
         article = Article(page.title, page, summary, num_lines)
         self.display_article(article)
+        self.speak(summary)
         image = self.wiki.get_best_image_url(page, self.max_image_width)
         article = article._replace(image=image)
         self.update_display_data(article)
         # Wait for the summary to finish, then remove skill from GUI
-        self.speak(summary, wait=True)
+        wait_while_speaking()
         self.gui.clear()
         # Remember context and speak results
         self._match = article
@@ -385,11 +386,8 @@ class WikipediaSkill(CommonQuerySkill):
         Arguments:
             article: Article containing necessary fields
         """
-        self.gui['title'] = article.title or ''
-        self.gui['summary'] = article.summary or ''
-        self.gui['imgLink'] = article.image or ''
-        self.gui.show_pages(
-            ['feature_image.qml', 'summary.qml'], override_idle=True)
+        self.update_display_data(article)
+        self.gui.show_page('feature_image.qml', override_idle=True)
 
     def update_display_data(self, article: Article):
         """Update the GUI display data when a page is already being shown.
@@ -397,7 +395,11 @@ class WikipediaSkill(CommonQuerySkill):
         Arguments:
             article: Article containing necessary fields
         """
-        self.gui['title'] = article.title or ''
+        title = article.title or ''
+        if len(title) > 20:
+            title = title[:20] + "..."
+
+        self.gui['title'] = title
         self.gui['summary'] = article.summary or ''
         self.gui['imgLink'] = article.image or ''
 

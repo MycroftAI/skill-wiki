@@ -19,6 +19,15 @@ Mycroft.CardDelegate {
     id: root
     cardBackgroundOverlayColor: "black"
 
+    Img {
+        width: Mycroft.Units.gridUnit * 6
+        height: Mycroft.Units.gridUnit * 6
+        anchors.top: parent.top
+        anchors.topMargin: Mycroft.Units.gridUnit
+
+        imgSrc: Qt.resolvedUrl("default-images/wikipedia-logo.svg")
+    }
+
     Title {
         id: articleTitle
         anchors.top: parent.top
@@ -32,7 +41,7 @@ Mycroft.CardDelegate {
 
     Img {
         width: parent.width
-        height: parent.height - gridUnit * 6
+        height: parent.height - gridUnit * 7
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         imgSrc: sessionData.imgLink
