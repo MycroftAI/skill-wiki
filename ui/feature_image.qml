@@ -20,8 +20,8 @@ Mycroft.CardDelegate {
     cardBackgroundOverlayColor: "black"
 
     Img {
-        width: Mycroft.Units.gridUnit * 6
-        height: Mycroft.Units.gridUnit * 6
+        width: Mycroft.Units.gridUnit * 3
+        height: Mycroft.Units.gridUnit * 3
         anchors.top: parent.top
         anchors.topMargin: Mycroft.Units.gridUnit
 
@@ -41,7 +41,7 @@ Mycroft.CardDelegate {
 
     Img {
         width: parent.width
-        height: parent.height - gridUnit * 7
+        height: parent.height - gridUnit * 6
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         imgSrc: sessionData.imgLink
