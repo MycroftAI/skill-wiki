@@ -1,3 +1,4 @@
 *.pyc
 .pytest_cache/
-settings.json
+settings.json.wh.*
+.wh.*
