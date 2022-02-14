@@ -174,7 +174,7 @@ class WikipediaSkill(CommonQuerySkill):
                     num_lines_spoken=new_lines_spoken)
                 self.display_article(article)
                 self.speak(summary_to_read, wait=True)
-                self.gui.clear()
+                self.gui.release()
 
                 # Update context
                 self._match = article
@@ -249,7 +249,7 @@ class WikipediaSkill(CommonQuerySkill):
         self.display_article(article)
         # Wait for the summary to finish, then remove skill from GUI
         wait_while_speaking()
-        self.gui.clear()
+        self.gui.release()
         # Set context for follow up queries - "tell me more"
         self._match = article
         self.set_context("wiki_article", "")
@@ -374,7 +374,7 @@ class WikipediaSkill(CommonQuerySkill):
         self.update_display_data(article)
         # Wait for the summary to finish, then remove skill from GUI
         wait_while_speaking()
-        self.gui.clear()
+        self.gui.release()
         # Remember context and speak results
         self._match = article
         # TODO improve context handling
