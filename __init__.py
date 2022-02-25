@@ -247,8 +247,8 @@ class WikipediaSkill(CommonQuerySkill):
             image = self.wiki.get_best_image_url(page, self.max_image_width)
         article = Article(title, page, summary, num_lines, image)
         self.display_article(article)
+        self.speak(summary, wait=True)
         # Wait for the summary to finish, then remove skill from GUI
-        wait_while_speaking()
         self.gui.release()
         # Set context for follow up queries - "tell me more"
         self._match = article
