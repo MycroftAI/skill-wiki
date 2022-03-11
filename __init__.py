@@ -396,8 +396,6 @@ class WikipediaSkill(CommonQuerySkill):
             article: Article containing necessary fields
         """
         title = article.title or ''
-        if len(title) > 20:
-            title = title[:20] + "..."
 
         self.gui['title'] = title
         self.gui['summary'] = article.summary or ''

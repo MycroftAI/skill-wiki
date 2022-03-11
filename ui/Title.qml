@@ -33,21 +33,43 @@ import QtQuick.Controls 2.3
 import Mycroft 1.0 as Mycroft
 
 Item {
-    property alias fontSize: title.font.pixelSize
-    property alias fontStyle: title.font.styleName
-    property alias text: title.text
+    property alias font: title.font
+    property alias color: title.color
+    property string text
     property int heightUnits: 0
     property int widthUnits: 0
-    property color textColor: "#FFFFFF"
+    property int maxTextLength: 100
     property bool centerText: true
 
     height: heightUnits ? Mycroft.Units.gridUnit * heightUnits : parent.height
     width: widthUnits ? Mycroft.Units.gridUnit * widthUnits : parent.width
 
+    anchors.horizontalCenter: parent.horizontalCenter
+
     Label {
         id: title
-        anchors.baseline: parent.bottom
+        clip: true
+        property string spacing: "    "
+        property string combined: parent.text + spacing
+        property string display: {
+            if (parent.text.length > parent.maxTextLength) {
+                combined.substring(step) + combined.substring(0, step)
+            } else {
+                parent.text
+            }
+        }
+        property int step: 0
+
+        text: display
+        width: parent.width
+
         anchors.horizontalCenter: centerText ? parent.horizontalCenter : undefined
-        color: textColor
+
+        Timer {
+            interval: 200
+            running: title.parent.text.length > title.parent.maxTextLength
+            repeat: true
+            onTriggered: parent.step = (parent.step + 1) % parent.combined.length
+        }
     }
 }

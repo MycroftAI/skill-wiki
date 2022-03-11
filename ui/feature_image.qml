@@ -33,10 +33,12 @@ Mycroft.CardDelegate {
         anchors.top: parent.top
         anchors.topMargin: gridUnit
         anchors.horizontalCenter: parent.horizontalCenter
-        fontSize: gridUnit * 3
-        fontStyle: "Bold"
+        font.pixelSize: gridUnit * 3
+        font.styleName: "Bold"
         heightUnits: 3
+        widthUnits: 36
         text: sessionData.title
+        maxTextLength: 21
     }
 
     Img {
