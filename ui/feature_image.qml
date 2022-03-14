@@ -20,6 +20,7 @@ Mycroft.CardDelegate {
     cardBackgroundOverlayColor: "black"
 
     Img {
+        id: logo
         width: Mycroft.Units.gridUnit * 3
         height: Mycroft.Units.gridUnit * 3
         anchors.top: parent.top
@@ -30,13 +31,13 @@ Mycroft.CardDelegate {
 
     Title {
         id: articleTitle
-        anchors.top: parent.top
-        anchors.topMargin: gridUnit
-        anchors.horizontalCenter: parent.horizontalCenter
-        font.pixelSize: gridUnit * 3
+        anchors.verticalCenter: logo.verticalCenter
+        anchors.left: logo.right
+        anchors.leftMargin: Mycroft.Units.gridUnit
+        anchors.right: parent.right
+        font.pixelSize: Mycroft.Units.gridUnit * 3
         font.styleName: "Bold"
-        heightUnits: 3
-        widthUnits: 36
+        heightUnits: 4
         text: sessionData.title
         maxTextLength: 21
     }
@@ -44,7 +45,7 @@ Mycroft.CardDelegate {
     Img {
         width: parent.width
         height: parent.height - gridUnit * 6
-        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.horizontalCenter: articleTitle.horizontalCenter
         anchors.bottom: parent.bottom
         imgSrc: sessionData.imgLink
     }

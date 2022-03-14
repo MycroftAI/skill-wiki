@@ -44,11 +44,10 @@ Item {
     height: heightUnits ? Mycroft.Units.gridUnit * heightUnits : parent.height
     width: widthUnits ? Mycroft.Units.gridUnit * widthUnits : parent.width
 
-    anchors.horizontalCenter: parent.horizontalCenter
+    clip: true
 
     Label {
         id: title
-        clip: true
         property string spacing: "    "
         property string combined: parent.text + spacing
         property string display: {
@@ -61,7 +60,6 @@ Item {
         property int step: 0
 
         text: display
-        width: parent.width
 
         anchors.horizontalCenter: centerText ? parent.horizontalCenter : undefined
 
