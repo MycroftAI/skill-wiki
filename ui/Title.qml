@@ -46,7 +46,6 @@ Item {
 
     height: heightUnits ? Mycroft.Units.gridUnit * heightUnits : parent.height
     width: widthUnits ? Mycroft.Units.gridUnit * widthUnits : parent.width
-    anchors.horizontalCenter: centerText ? parent.horizontalCenter : undefined
 
     Label {
         id: titleStatic
