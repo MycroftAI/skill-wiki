@@ -33,41 +33,57 @@ import QtQuick.Controls 2.3
 import Mycroft 1.0 as Mycroft
 
 Item {
-    property alias font: title.font
-    property alias color: title.color
-    property string text
+    id: titleRoot
+    property var text
+    property var fontSize
+    property var fontStyle
+    property var maxTextLength
     property int heightUnits: 0
     property int widthUnits: 0
-    property int maxTextLength: 100
+    property int assumedWidth: Mycroft.Units.gridUnit * 36
+    property color textColor: "#FFFFFF"
     property bool centerText: true
 
     height: heightUnits ? Mycroft.Units.gridUnit * heightUnits : parent.height
     width: widthUnits ? Mycroft.Units.gridUnit * widthUnits : parent.width
-
-    clip: true
+    anchors.horizontalCenter: centerText ? parent.horizontalCenter : undefined
 
     Label {
-        id: title
-        property string spacing: "    "
-        property string combined: parent.text + spacing
-        property string display: {
-            if (parent.text.length > parent.maxTextLength) {
-                combined.substring(step) + combined.substring(0, step)
-            } else {
-                parent.text
-            }
-        }
-        property int step: 0
-
-        text: display
-
-        anchors.horizontalCenter: centerText ? parent.horizontalCenter : undefined
-
-        Timer {
-            interval: 200
-            running: title.parent.text.length > title.parent.maxTextLength
-            repeat: true
-            onTriggered: parent.step = (parent.step + 1) % parent.combined.length
-        }
+        id: titleStatic
+        visible: true
+        anchors.baseline: parent.bottom
+        anchors.horizontalCenter: titleRoot.centerText ? parent.horizontalCenter : undefined
+        text: titleRoot.text
+        color: titleRoot.textColor
+        font.pixelSize: titleRoot.fontSize
+        font.styleName: titleRoot.fontStyle
     }
+
+    Mycroft.MarqueeText {
+        id: titleScrolling
+        visible: false
+        width: titleRoot.width
+        height: titleRoot.height
+        anchors.bottom: parent.bottom
+        text: titleRoot.text
+        color: titleRoot.textColor
+        font.pixelSize: titleRoot.fontSize
+        font.styleName: titleRoot.fontStyle
+        rightToLeft: true
+        speed: 10000
+        delay: 4000
+        distance: assumedWidth
+    }
+
+    Component.onCompleted: {
+        if (titleStatic.paintedWidth > assumedWidth) {
+            titleStatic.visible = false
+            titleScrolling.visible = true
+            clip = true
+        } else {
+            titleStatic.visible = true
+            titleScrolling.visible = false
+            clip = false
+        }
+    }  
 }

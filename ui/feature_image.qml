@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//    http://www.apache.org/licenses/LICENSE-2.0
+//    http: //www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,10 +33,11 @@ Mycroft.CardDelegate {
         id: articleTitle
         anchors.verticalCenter: logo.verticalCenter
         anchors.left: logo.right
-        anchors.leftMargin: Mycroft.Units.gridUnit
+        anchors.leftMargin: Mycroft.Units.gridUnit * 3
         anchors.right: parent.right
-        font.pixelSize: Mycroft.Units.gridUnit * 3
-        font.styleName: "Bold"
+        anchors.rightMargin: Mycroft.Units.gridUnit * 6
+        fontSize: Mycroft.Units.gridUnit * 3
+        fontStyle: "Bold"
         heightUnits: 4
         text: sessionData.title
         maxTextLength: 21
