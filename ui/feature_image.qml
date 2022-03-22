@@ -19,33 +19,40 @@ Mycroft.CardDelegate {
     id: root
     cardBackgroundOverlayColor: "black"
 
-    Img {
-        id: logo
-        width: Mycroft.Units.gridUnit * 3
-        height: Mycroft.Units.gridUnit * 3
+    // The Wikipedia logo is positioned in the upper left corner of the card
+    Image {
+        id: wikiLogo
         anchors.top: parent.top
-        anchors.topMargin: Mycroft.Units.gridUnit
-
-        imgSrc: Qt.resolvedUrl("default-images/wikipedia-logo.svg")
+        anchors.topMargin: gridUnit
+        anchors.left: parent.left
+        anchors.leftMargin: gridUnit
+        fillMode: Image.PreserveAspectFit
+        height: gridUnit * 3
+        source: "default-images/wikipedia-logo.svg"
+        width: gridUnit * 3
     }
 
-    Title {
+
+    // Show the article's title in the center of the card or scroll it horzontally
+    // if it is longer than the width of the card.
+    Marquee {
         id: articleTitle
-        anchors.verticalCenter: logo.verticalCenter
-        anchors.left: logo.right
-        anchors.leftMargin: Mycroft.Units.gridUnit
-        anchors.right: parent.right
-        font.pixelSize: Mycroft.Units.gridUnit * 3
+        anchors.top: parent.top
+        anchors.topMargin: gridUnit
+        anchors.left: wikiLogo.right
+        anchors.leftMargin: gridUnit * 2
+        color: "#FFFFFF"
+        font.pixelSize: 59
         font.styleName: "Bold"
-        heightUnits: 4
+        height: gridUnit * 4
         text: sessionData.title
-        maxTextLength: 21
+        width: gridUnit * 36
     }
 
     Img {
         width: parent.width
         height: parent.height - gridUnit * 6
-        anchors.horizontalCenter: articleTitle.horizontalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         imgSrc: sessionData.imgLink
     }
