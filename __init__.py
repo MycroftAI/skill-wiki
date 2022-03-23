@@ -217,7 +217,7 @@ class WikipediaSkill(CommonQuerySkill):
             self._cqs_match = Article(page.title, page, answer, num_lines)
         if answer:
             self.schedule_event(self.get_cqs_match_image, 0)
-            return (query, CQSMatchLevel.CATEGORY, answer, callback_data)
+            return (query, CQSMatchLevel.GENERAL, answer, callback_data)
         return answer
 
     def CQS_action(self, phrase: str, data: dict):
